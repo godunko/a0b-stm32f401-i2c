@@ -18,17 +18,16 @@ with A0B.STM32F401.SVD.DMA; use A0B.STM32F401.SVD.DMA;
 
 package body A0B.I2C.STM32F401_I2C is
 
+   use type A0B.Types.Unsigned_32;
    --  use A0B.STM32F401.SVD.I2C;
 
-   --  procedure Configure_Target_Address
-   --    (Self : in out Master_Controller'Class);
-   --  Configure target address.
+   procedure Setup_Data_Transmit (Self : in out Master_Controller'Class)
+     with Pre => Self.Operation = Write;
+   --  Setup data transmission for the active buffer.
 
---     procedure Load_Into_TX (Self : in out Master_Controller'Class);
---     --  Write next byte into the TX register, switch buffer when necessary.
---
---     procedure Store_From_RX (Self : in out Master_Controller'Class);
---     --  Read next byte from the RX register, switch buffer when necessary.
+   procedure Setup_Data_Receive (Self : in out Master_Controller'Class)
+     with Pre => Self.Operation = Read;
+   --  Setup data transmission for the active buffer.
 
    ---------------
    -- Configure --
@@ -146,64 +145,6 @@ package body A0B.I2C.STM32F401_I2C is
       A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (Self.Event_Interrupt);
       A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (Self.Error_Interrupt);
 
---        --  Configure control register 1
---
---        declare
---           Val : A0B.SVD.STM32H723.I2C.CR1_Register := Self.Peripheral.CR1;
---
---        begin
---           Val.PECEN     := False;
---           Val.ALERTEN   := False;
---           Val.SMBDEN    := False;
---           --  Device default address disabled (I2C mode)
---           Val.SMBHEN    := False;    --  Host address disabled (I2C mode)
---           Val.GCEN      := False;
---           Val.WUPEN     := False;
---           Val.NOSTRETCH := False;    --  Must be kept cleared in master mode
---           Val.SBC       := False;
---           Val.RXDMAEN   := False;    --  RX DMA disabled
---           Val.TXDMAEN   := False;    --  TX DMA disabled
---           Val.ANFOFF    := False;    --  Analog filter enabled
---           Val.DNF       := 2#0000#;  --  Digital filter disabled
---           Val.ERRIE     := True;     --  Error interrupt enabled
---           Val.TCIE      := True;     --  Transfer Complete interrupt enabled
---           Val.STOPIE    := True;
---           --  Stop detection (STOPF) interrupt enabled
---           Val.NACKIE    := True;
---           --  Not acknowledge (NACKF) received interrupts enabled
---           Val.ADDRIE    := False;
---           --  Address match (ADDR) interrupts disabled
---           Val.RXIE      := True;     --  Receive (RXNE) interrupt enabled
---           Val.TXIE      := True;     --  Transmit (TXIS) interrupt enabled
---
---           Self.Peripheral.CR1 := Val;
---        end;
---
---        --  Configure timing register (Fast Mode)
---
---        declare
---           Val : A0B.SVD.STM32H723.I2C.TIMINGR_Register :=
---             Self.Peripheral.TIMINGR;
---
---        begin
---           --  Standard Mode
---
---           Val.PRESC  := 16#2#;
---           Val.SCLDEL := 16#A#;
---           Val.SDADEL := 16#0#;
---           Val.SCLH   := 16#AC#;
---           Val.SCLL   := 16#FE#;
---
---           --  Fast Mode
---           --  Val.PRESC  := 0;
---           --  Val.SCLDEL := 16#C#;
---           --  Val.SDADEL := 0;
---           --  Val.SCLH   := 16#45#;
---           --  Val.SCLL   := 16#ED#;
---
---           Self.Peripheral.TIMINGR := Val;
---        end;
-
       --  Configure DMA stream (DMA 1 Stream 6 Channel 1)
 
       DMA1_Periph.S6CR :=
@@ -276,46 +217,6 @@ package body A0B.I2C.STM32F401_I2C is
       A0B.ARMv7M.NVIC_Utilities.Clear_Pending (A0B.STM32F401.DMA1_Stream0);
       A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (A0B.STM32F401.DMA1_Stream0);
    end Configure;
-
-   ------------------------------
-   -- Configure_Target_Address --
-   ------------------------------
---
---     procedure Configure_Target_Address
---       (Self : in out Master_Controller'Class)
---     is
---        --  Target_Address : constant Device_Address :=
---        --    Device_Locks.Device (Self.Device_Lock).Target_Address;
---
---     begin
---        raise Program_Error;
---  --        --  if Self.State = Initial then
---  --           --  Set device address and addressing mode to do its only once.
---  --
---  --           declare
---  --              Val : A0B.SVD.STM32H723.I2C.CR2_Register := Self.Peripheral.CR2;
---  --
---  --           begin
---  --              if Target_Address <= 16#7F# then
---  --                 Val.ADD10    := False;
---  --                 Val.SADD.Val :=
---  --                   A0B.Types.Unsigned_10
---  --                     (A0B.Types.Shift_Left
---  --                        (A0B.Types.Unsigned_32 (Target_Address), 1));
---  --                 --  In 7-bit addressing mode device address should be written
---  --                 --  to SADD[7:1], so shift it left by one bit.
---  --
---  --              else
---  --                 Val.ADD10    := True;
---  --                 Val.SADD.Val := A0B.Types.Unsigned_10 (Target_Address);
---  --                 --  In 7-bit addressing mode device address should be written
---  --                 --  to SADD[7:1], so shift it left by one bit.
---  --              end if;
---  --
---  --              Self.Peripheral.CR2 := Val;
---  --           end;
---  --        --  end if;
---     end Configure_Target_Address;
 
    ------------------
    -- Device_Locks --
@@ -393,45 +294,6 @@ package body A0B.I2C.STM32F401_I2C is
 
    end Device_Locks;
 
---     ------------------
---     -- Load_Into_TX --
---     ------------------
---
---     procedure Load_Into_TX (Self : in out Master_Controller'Class) is
---        use type A0B.Types.Unsigned_32;
---        use type System.Address;
---        use type System.Storage_Elements.Storage_Offset;
---
---     begin
---        if Self.Address = System.Null_Address then
---           --  Start of the transfer
---
---           Self.Address := Self.Buffers (Self.Active).Address;
---        end if;
---
---        loop
---           exit when
---             Self.Buffers (Self.Active).Size
---               /= Self.Buffers (Self.Active).Bytes;
---
---           Self.Buffers (Self.Active).State := Success;
---
---           Self.Active  := @ + 1;
---           Self.Address := Self.Buffers (Self.Active).Address;
---        end loop;
---
---        declare
---           Data : constant A0B.Types.Unsigned_8
---             with Import, Address => Self.Address;
---
---        begin
---           Self.Peripheral.TXDR.TXDATA := Data;
---
---           Self.Address                     := @ + 1;
---           Self.Buffers (Self.Active).Bytes := @ + 1;
---        end;
---     end Load_Into_TX;
-
    ------------------------
    -- On_Error_Interrupt --
    ------------------------
@@ -448,7 +310,6 @@ package body A0B.I2C.STM32F401_I2C is
    procedure On_Event_Interrupt (Self : in out Master_Controller'Class) is
 
       use type Interfaces.Unsigned_8;
-      use type Interfaces.Unsigned_32;
 
       Status : constant A0B.STM32F401.SVD.I2C.SR1_Register :=
         Self.Peripheral.SR1;
@@ -487,21 +348,35 @@ package body A0B.I2C.STM32F401_I2C is
 
       elsif Status.BTF then
          --  Byte transfer finished.
+         --
+         --  This flag is set in transmit operation only, when data has been
+         --  transmitted by the DMA controller.
+
+         --  Disable DMA stream
+
+         DMA1_Periph.S6CR.EN := False;
+
+         --  Update operation status
+
+         Self.Buffers (Self.Active).Transferred :=
+           Self.Buffers (Self.Active).Size;
+         Self.Buffers (Self.Active).State := Success;
 
          if Self.Buffers'Last /= Self.Active then
-            raise Program_Error;
+            Self.Active := @ + 1;
+            Self.Setup_Data_Transmit;
 
          else
-            --  Transfer operation has been finished.
-
-            Self.Buffers (Self.Active).Bytes :=
-              Self.Buffers (Self.Active).Size;
-            Self.Buffers (Self.Active).State := Success;
-
             --  Send STOP condition when requested.
 
             if Self.Stop then
                Self.Peripheral.CR1.STOP := True;
+
+               --  XXX Handle STOP !!!
+
+               --  while Self.Peripheral.SR2.BUSY loop
+               --     null;
+               --  end loop;
             end if;
 
             --  Notify device driver.
@@ -540,21 +415,37 @@ package body A0B.I2C.STM32F401_I2C is
             raise Program_Error;
          end if;
 
+         --  Disable DMA stream
+
+         DMA1_Periph.S0CR.EN := False;
+
          --  Transfer operation has been finished.
 
-         Self.Buffers (Self.Active).Bytes :=
+         Self.Buffers (Self.Active).Transferred :=
            Self.Buffers (Self.Active).Size;
          Self.Buffers (Self.Active).State := Success;
 
-         --  Send STOP condition when requested.
+         if Self.Active /= Self.Buffers'Last then
+            Self.Active := @ + 1;
+            Self.Setup_Data_Receive;
 
-         if Self.Stop then
-            Self.Peripheral.CR1.STOP := True;
+         else
+            --  Send STOP condition when requested.
+
+            if Self.Stop then
+               Self.Peripheral.CR1.STOP := True;
+
+               --  XXX Handle STOP !!!
+
+               --  while Self.Peripheral.SR2.BUSY loop
+               --     null;
+               --  end loop;
+            end if;
+
+            --  Notify device driver.
+
+            Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
          end if;
-
-         --  Notify device driver.
-
-         Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
       --     raise Program_Error;
       end if;
 
@@ -650,7 +541,7 @@ package body A0B.I2C.STM32F401_I2C is
          --  DMA2_Periph.HIFCR.CFEIF6  := True;
          --  DMA2_Periph.HIFCR.CDMEIF6 := True;
          --  DMA2_Periph.HIFCR.CTEIF6  := True;
-         DMA2_Periph.LIFCR.CHTIF0 := True;
+         DMA1_Periph.LIFCR.CHTIF0 := True;
          DMA1_Periph.LIFCR.CTCIF0 := True;
          --  Clear TC and HT status flags
 
@@ -681,7 +572,7 @@ package body A0B.I2C.STM32F401_I2C is
          --  DMA2_Periph.HIFCR.CFEIF6  := True;
          --  DMA2_Periph.HIFCR.CDMEIF6 := True;
          --  DMA2_Periph.HIFCR.CTEIF6  := True;
-         DMA2_Periph.HIFCR.CHTIF6 := True;
+         DMA1_Periph.HIFCR.CHTIF6 := True;
          DMA1_Periph.HIFCR.CTCIF6 := True;
          --  Clear TC and HT status flags
 
@@ -702,12 +593,7 @@ package body A0B.I2C.STM32F401_I2C is
       Device  : not null I2C_Device_Driver_Access;
       Buffers : in out Buffer_Descriptor_Array;
       Stop    : Boolean;
-      Success : in out Boolean)
-   is
-      use type A0B.Types.Unsigned_32;
-
---        Size : A0B.Types.Unsigned_32 := 0;
---
+      Success : in out Boolean) is
    begin
       Device_Locks.Acquire (Self.Device_Lock, Device, Success);
 
@@ -716,18 +602,29 @@ package body A0B.I2C.STM32F401_I2C is
       end if;
 
       for Buffer of Buffers loop
---           Size := @ + Buffer.Size;
-
-         Buffer.Bytes := 0;
-         Buffer.State := Active;
+         Buffer.Transferred := 0;
+         Buffer.State       := Active;
       end loop;
 
       Self.Device    := Device.Target_Address;
       Self.Operation := Read;
       Self.Buffers   := Buffers'Unrestricted_Access;
       Self.Active    := 0;
---        Self.Address := System.Null_Address;
       Self.Stop      := Stop;
+
+      Self.Setup_Data_Receive;
+
+      Self.Peripheral.CR1.START := True;
+      --  Send START condition
+   end Read;
+
+   ------------------------
+   -- Setup_Data_Receive --
+   ------------------------
+
+   procedure Setup_Data_Receive (Self : in out Master_Controller'Class) is
+   begin
+      --  Configure DMA transfer
 
       DMA1_Periph.S0NDTR.NDT :=
         S6NDTR_NDT_Field (Self.Buffers (Self.Active).Size);
@@ -735,48 +632,69 @@ package body A0B.I2C.STM32F401_I2C is
         Interfaces.Unsigned_32
           (System.Storage_Elements.To_Integer
              (Self.Buffers (Self.Active).Address));
+
+      --  Mark last DMA transfer operation
+
+      Self.Peripheral.CR2.LAST :=  Self.Buffers'Last = Self.Active;
+
+      --  Reset state of the DMA stream
+
+      declare
+         Aux : LIFCR_Register := DMA1_Periph.LIFCR;
+
+      begin
+         Aux.CFEIF0  := True;
+         Aux.CDMEIF0 := True;
+         Aux.CTEIF0  := True;
+         Aux.CHTIF0  := True;
+         Aux.CTCIF0  := True;
+
+         DMA1_Periph.LIFCR := Aux;
+      end;
+
+      --  Enable DMA stream
+
       DMA1_Periph.S0CR.EN := True;
+   end Setup_Data_Receive;
 
-      if Self.Buffers'Last /= Self.Active then
-         raise Program_Error;
+   -------------------------
+   -- Setup_Data_Transmit --
+   -------------------------
 
-      else
-         Self.Peripheral.CR2.LAST := True;
-      end if;
+   procedure Setup_Data_Transmit (Self : in out Master_Controller'Class) is
+   begin
+      --  Configure DMA transfer
 
-      Self.Peripheral.CR1.START := True;
-      --  Send START condition
+      DMA1_Periph.S6NDTR.NDT :=
+        S6NDTR_NDT_Field (Self.Buffers (Self.Active).Size);
+      DMA1_Periph.S6M0AR :=
+        Interfaces.Unsigned_32
+          (System.Storage_Elements.To_Integer
+             (Self.Buffers (Self.Active).Address));
 
---        --  A0B.ARMv7M.NVIC_Utilities.Disable_Interrupt (Self.Event_Interrupt);
---        --  --  Disable event interrup from the peripheral controller to prevent
---        --  --  undesired TC interrupt (it will be cleared by send of the START
---        --  --  condition).
---
---        --  Set transfer parameters and send (Re)START condition.
---
---        declare
---           Val : A0B.SVD.STM32H723.I2C.CR2_Register := Self.Peripheral.CR2;
---
---        begin
---           Val.RD_WRN  := True;           --  Master requests a read transfer.
---           Val.NBYTES  := A0B.Types.Unsigned_8 (Size);
---           --  Number of bytes to be transfered.
---
---           Val.AUTOEND := False;
---           Val.RELOAD  := False;
---           Val.START   := True;
---           --  Val.RELOAD  := True;
---
---           Self.Peripheral.CR2 := Val;
---        end;
---
---        Self.Peripheral.CR1.TCIE := True;
---        --  Enable TC and TCE interrupts.
---
---        --  A0B.ARMv7M.NVIC_Utilities.Clear_Pending (Self.Event_Interrupt);
---        --  A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (Self.Event_Interrupt);
---        --  --  Clear pending interrupt status and enable interrupt.
-   end Read;
+      --  Mark last DMA transfer operation
+
+      Self.Peripheral.CR2.LAST :=  Self.Buffers'Last = Self.Active;
+
+      --  Reset state of the DMA stream
+
+      declare
+         Aux : HIFCR_Register := DMA1_Periph.HIFCR;
+
+      begin
+         Aux.CFEIF6  := True;
+         Aux.CDMEIF6 := True;
+         Aux.CTEIF6  := True;
+         Aux.CHTIF6  := True;
+         Aux.CTCIF6  := True;
+
+         DMA1_Periph.HIFCR := Aux;
+      end;
+
+      --  Enable DMA stream
+
+      DMA1_Periph.S6CR.EN := True;
+   end Setup_Data_Transmit;
 
    -----------
    -- Start --
@@ -850,43 +768,6 @@ package body A0B.I2C.STM32F401_I2C is
 --        raise Program_Error;
    end Stop;
 
---     -------------------
---     -- Store_From_RX --
---     -------------------
---
---     procedure Store_From_RX (Self : in out Master_Controller'Class) is
---        use type A0B.Types.Unsigned_32;
---        use type System.Address;
---        use type System.Storage_Elements.Storage_Offset;
---
---     begin
---        if Self.Address = System.Null_Address then
---           --  Start of the transfer
---
---           Self.Address := Self.Buffers (Self.Active).Address;
---        end if;
---
---        loop
---           exit when
---             Self.Buffers (Self.Active).Size
---               /= Self.Buffers (Self.Active).Bytes;
---
---           Self.Active  := @ + 1;
---           Self.Address := Self.Buffers (Self.Active).Address;
---        end loop;
---
---        declare
---           Data : A0B.Types.Unsigned_8
---             with Import, Address => Self.Address;
---
---        begin
---           Data := Self.Peripheral.RXDR.RXDATA;
---
---           Self.Address                     := @ + 1;
---           Self.Buffers (Self.Active).Bytes := @ + 1;
---        end;
---     end Store_From_RX;
-
    -----------
    -- Write --
    -----------
@@ -896,12 +777,7 @@ package body A0B.I2C.STM32F401_I2C is
       Device  : not null I2C_Device_Driver_Access;
       Buffers : in out Buffer_Descriptor_Array;
       Stop    : Boolean;
-      Success : in out Boolean)
-   is
-      use type A0B.Types.Unsigned_32;
-
-      --  Size : A0B.Types.Unsigned_32 := 0;
-
+      Success : in out Boolean) is
    begin
       Device_Locks.Acquire (Self.Device_Lock, Device, Success);
 
@@ -910,79 +786,20 @@ package body A0B.I2C.STM32F401_I2C is
       end if;
 
       for Buffer of Buffers loop
-         --  Size := @ + Buffer.Size;
-
-         Buffer.Bytes := 0;
-         Buffer.State := Active;
+         Buffer.Transferred := 0;
+         Buffer.State       := Active;
       end loop;
 
       Self.Device    := Device.Target_Address;
       Self.Operation := Write;
       Self.Buffers   := Buffers'Unrestricted_Access;
       Self.Active    := 0;
---        Self.Address := System.Null_Address;
       Self.Stop      := Stop;
 
---        Self.Configure_Target_Address;
-
-      DMA1_Periph.S6NDTR.NDT :=
-        S6NDTR_NDT_Field (Self.Buffers (Self.Active).Size);
-      DMA1_Periph.S6M0AR :=
-        Interfaces.Unsigned_32
-          (System.Storage_Elements.To_Integer
-             (Self.Buffers (Self.Active).Address));
-      DMA1_Periph.S6CR.EN := True;
-
-      if Self.Buffers'Last /= Self.Active then
-         raise Program_Error;
-
-      else
-         Self.Peripheral.CR2.LAST := True;
-      end if;
+      Self.Setup_Data_Transmit;
 
       Self.Peripheral.CR1.START := True;
       --  Send START condition
-
-      --  raise Program_Error;
---        --  A0B.ARMv7M.NVIC_Utilities.Disable_Interrupt (Self.Event_Interrupt);
---        --  --  Disable event interrup from the peripheral controller to prevent
---        --  --  undesired TC interrupt (it will be cleared by send of the START
---        --  --  condition).
---
---        --  Apply workaround.
---        --
---        --  [ES0491] 2.16.4 Transmission stalled after first byte transfer
---        --
---        --  "Write the first data in I2C_TXDR before the transmission
---        --  starts."
---
---        if Size /= 0 then
---           Self.Load_Into_TX;
---        end if;
---
---        --  Set transfer parameters and send (Re)START condition.
---
---        declare
---           Val : A0B.SVD.STM32H723.I2C.CR2_Register := Self.Peripheral.CR2;
---
---        begin
---           Val.RD_WRN  := False;  --  Master requests a write transfer.
---           Val.NBYTES  := A0B.Types.Unsigned_8 (Size);
---           --  Number of bytes to be transfered.
---
---           Val.AUTOEND := False;
---           Val.RELOAD  := False;
---           Val.START   := True;
---
---           Self.Peripheral.CR2 := Val;
---        end;
---
---        Self.Peripheral.CR1.TCIE := True;
---        --  Enable TC and TCE interrupts.
---
---        --  A0B.ARMv7M.NVIC_Utilities.Clear_Pending (Self.Event_Interrupt);
---        --  A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (Self.Event_Interrupt);
---        --  --  Clear pending interrupt status and enable interrupt.
    end Write;
 
 end A0B.I2C.STM32F401_I2C;
