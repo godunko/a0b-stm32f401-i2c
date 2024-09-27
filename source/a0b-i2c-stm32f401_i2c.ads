@@ -7,10 +7,14 @@
 --  Implementation of the I2C bus master for the STM32F401 controller.
 --  It use DMA for data transfer.
 
-pragma Restrictions (No_Elaboration_Code);
+--  pragma Restrictions (No_Elaboration_Code);
+
+private with Interfaces;
 
 with A0B.ARMv7M;
 with A0B.STM32F401.SVD.I2C;
+
+private with A0B.STM32F401.SVD.DMA;
 
 package A0B.I2C.STM32F401_I2C
   with Preelaborate
@@ -59,6 +63,22 @@ private
 
    end Device_Locks;
 
+   type DMA_Stream
+     (Peripheral : not null access A0B.STM32F401.SVD.DMA.DMA_Peripheral)
+   is abstract tagged limited null record;
+
+   not overriding procedure Set_Memory_Address
+     (Self    : in out DMA_Stream;
+      Address : System.Address) is abstract;
+
+   not overriding procedure Set_Data_Length
+     (Self   : in out DMA_Stream;
+      Length : Interfaces.Unsigned_16) is abstract;
+
+   not overriding procedure Clear_Status (Self : in out DMA_Stream) is abstract;
+
+   not overriding procedure Enable (Self : in out DMA_Stream) is abstract;
+
    type Operation_Kind is (Read, Write);
 
    type Master_Controller
@@ -71,10 +91,14 @@ private
       Operation   : Operation_Kind;
       Buffers     : access Buffer_Descriptor_Array;
       Active      : A0B.Types.Unsigned_32;
+      Stream      : access DMA_Stream'Class;
       Stop        : Boolean;
       --  Send of STOP condition is requested after completion of the current
       --  operation. This flag is used to reject erroneous Read/Write request
       --  after completion of the transfer and before release of the bus.
+
+      Transmit_Stream : access DMA_Stream'Class;
+      Receive_Stream  : access DMA_Stream'Class;
    end record;
 
    overriding procedure Start

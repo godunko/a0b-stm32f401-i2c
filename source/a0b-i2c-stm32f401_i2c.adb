@@ -4,10 +4,9 @@
 --  SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 --
 
-pragma Restrictions (No_Elaboration_Code);
+--  pragma Restrictions (No_Elaboration_Code);
 pragma Ada_2022;
 
-with Interfaces;
 with System.Address_To_Access_Conversions;
 pragma Warnings (Off, """System.Atomic_Primitives"" is an internal GNAT unit");
 with System.Atomic_Primitives;
@@ -20,13 +19,213 @@ package body A0B.I2C.STM32F401_I2C is
 
    use type A0B.Types.Unsigned_32;
 
-   procedure Setup_Data_Transmit (Self : in out Master_Controller'Class)
-     with Pre => Self.Operation = Write;
-   --  Setup data transmission for the active buffer.
+   procedure Setup_Data_Transfer (Self : in out Master_Controller'Class);
+   --  Setup DMA data transmission for the active buffer.
 
-   procedure Setup_Data_Receive (Self : in out Master_Controller'Class)
-     with Pre => Self.Operation = Read;
-   --  Setup data transmission for the active buffer.
+   procedure Complte_Transfer (Self : in out Master_Controller'Class);
+   --  Complete transfer of the chunk of the data.
+
+   package DMA_Streams is
+
+      type DMA_Stream0 is new DMA_Stream with null record;
+
+      overriding procedure Set_Memory_Address
+        (Self    : in out DMA_Stream0;
+         Address : System.Address);
+
+      overriding procedure Set_Data_Length
+        (Self   : in out DMA_Stream0;
+         Length : Interfaces.Unsigned_16);
+
+      overriding procedure Clear_Status (Self : in out DMA_Stream0);
+
+      overriding procedure Enable (Self : in out DMA_Stream0);
+
+      type DMA_Stream6 is new DMA_Stream with null record;
+
+      overriding procedure Set_Memory_Address
+        (Self    : in out DMA_Stream6;
+         Address : System.Address);
+
+      overriding procedure Set_Data_Length
+        (Self   : in out DMA_Stream6;
+         Length : Interfaces.Unsigned_16);
+
+      overriding procedure Clear_Status (Self : in out DMA_Stream6);
+
+      overriding procedure Enable (Self : in out DMA_Stream6);
+
+   end DMA_Streams;
+
+   -----------------
+   -- DMA_Streams --
+   -----------------
+
+   package body DMA_Streams is
+
+      ------------------
+      -- Clear_Status --
+      ------------------
+
+      overriding procedure Clear_Status (Self : in out DMA_Stream0) is
+         Aux : LIFCR_Register := Self.Peripheral.LIFCR;
+
+      begin
+         Aux.CFEIF0  := True;
+         Aux.CDMEIF0 := True;
+         Aux.CTEIF0  := True;
+         Aux.CHTIF0  := True;
+         Aux.CTCIF0  := True;
+
+         Self.Peripheral.LIFCR := Aux;
+      end Clear_Status;
+
+      ------------------
+      -- Clear_Status --
+      ------------------
+
+      overriding procedure Clear_Status (Self : in out DMA_Stream6) is
+         Aux : HIFCR_Register := Self.Peripheral.HIFCR;
+
+      begin
+         Aux.CFEIF6  := True;
+         Aux.CDMEIF6 := True;
+         Aux.CTEIF6  := True;
+         Aux.CHTIF6  := True;
+         Aux.CTCIF6  := True;
+
+         Self.Peripheral.HIFCR := Aux;
+      end Clear_Status;
+
+      ------------
+      -- Enable --
+      ------------
+
+      overriding procedure Enable (Self : in out DMA_Stream0) is
+      begin
+         Self.Peripheral.S0CR.EN := True;
+      end Enable;
+
+      ------------
+      -- Enable --
+      ------------
+
+      overriding procedure Enable (Self : in out DMA_Stream6) is
+      begin
+         Self.Peripheral.S6CR.EN := True;
+      end Enable;
+
+      ---------------------
+      -- Set_Data_Length --
+      ---------------------
+
+      overriding procedure Set_Data_Length
+        (Self   : in out DMA_Stream0;
+         Length : Interfaces.Unsigned_16) is
+      begin
+         Self.Peripheral.S0NDTR.NDT := Length;
+      end Set_Data_Length;
+
+      ---------------------
+      -- Set_Data_Length --
+      ---------------------
+
+      overriding procedure Set_Data_Length
+        (Self   : in out DMA_Stream6;
+         Length : Interfaces.Unsigned_16) is
+      begin
+         Self.Peripheral.S6NDTR.NDT := Length;
+      end Set_Data_Length;
+
+      ------------------------
+      -- Set_Memory_Address --
+      ------------------------
+
+      overriding procedure Set_Memory_Address
+        (Self    : in out DMA_Stream0;
+         Address : System.Address) is
+      begin
+         Self.Peripheral.S0M0AR :=
+           Interfaces.Unsigned_32
+             (System.Storage_Elements.To_Integer (Address));
+      end Set_Memory_Address;
+
+      ------------------------
+      -- Set_Memory_Address --
+      ------------------------
+
+      overriding procedure Set_Memory_Address
+        (Self    : in out DMA_Stream6;
+         Address : System.Address) is
+      begin
+         Self.Peripheral.S6M0AR :=
+           Interfaces.Unsigned_32
+             (System.Storage_Elements.To_Integer (Address));
+      end Set_Memory_Address;
+
+   end DMA_Streams;
+
+   S0 : aliased DMA_Streams.DMA_Stream0
+                  (A0B.STM32F401.SVD.DMA.DMA1_Periph'Access);
+   S6 : aliased DMA_Streams.DMA_Stream6
+                  (A0B.STM32F401.SVD.DMA.DMA1_Periph'Access);
+
+   ----------------------
+   -- Complte_Transfer --
+   ----------------------
+
+   procedure Complte_Transfer (Self : in out Master_Controller'Class) is
+   begin
+      --  Transfer operation has been finished.
+
+      Self.Buffers (Self.Active).Transferred :=
+        Self.Buffers (Self.Active).Size;
+      Self.Buffers (Self.Active).State := Success;
+
+      if Self.Active /= Self.Buffers'Last then
+         Self.Active := @ + 1;
+         Self.Setup_Data_Transfer;
+
+      else
+         declare
+            Stop : constant Boolean := Self.Stop;
+            --  Catch value, it can be changed by callback
+
+         begin
+            if Stop then
+               Self.Peripheral.CR1.STOP := True;
+               --  Send STOP condition when requested. There is no interrupt to
+               --  handle unset of BUSY by hardware, so attempt to overlap send
+               --  of STOP condition and processing of the recieved data by the
+               --  device driver.
+            end if;
+
+            Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
+            --  Notify device driver about end of operation.
+
+            if Stop then
+               --  Wait till end of the transaction on the bus.
+
+               while Self.Peripheral.SR2.BUSY loop
+                  null;
+               end loop;
+
+               Self.Stop := False;
+
+               declare
+                  Device  : constant I2C_Device_Driver_Access :=
+                    Device_Locks.Device (Self.Device_Lock);
+                  Success : Boolean := True;
+
+               begin
+                  Device_Locks.Release (Self.Device_Lock, Device, Success);
+
+                  Device.On_Transaction_Completed;
+               end;
+            end if;
+         end;
+      end if;
+   end Complte_Transfer;
 
    ---------------
    -- Configure --
@@ -179,6 +378,8 @@ package body A0B.I2C.STM32F401_I2C is
       A0B.ARMv7M.NVIC_Utilities.Clear_Pending (A0B.STM32F401.DMA1_Stream6);
       A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (A0B.STM32F401.DMA1_Stream6);
 
+      Self.Transmit_Stream := S6'Access;
+
       --  Configure DMA stream (DMA 1 Stream 0 Channel 1)
 
       DMA1_Periph.S0CR :=
@@ -215,6 +416,8 @@ package body A0B.I2C.STM32F401_I2C is
 
       A0B.ARMv7M.NVIC_Utilities.Clear_Pending (A0B.STM32F401.DMA1_Stream0);
       A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (A0B.STM32F401.DMA1_Stream0);
+
+      Self.Receive_Stream := S0'Access;
    end Configure;
 
    ------------------
@@ -298,8 +501,30 @@ package body A0B.I2C.STM32F401_I2C is
    ------------------------
 
    procedure On_Error_Interrupt (Self : in out Master_Controller'Class) is
+      Status : constant A0B.STM32F401.SVD.I2C.SR1_Register :=
+        Self.Peripheral.SR1;
+
    begin
-      raise Program_Error;
+      if Status.OVR then
+         raise Program_Error;
+      end if;
+
+      if Status.AF then
+         raise Program_Error;
+      end if;
+
+      if Status.ARLO then
+         raise Program_Error;
+      end if;
+
+      if Status.BERR then
+         raise Program_Error;
+      end if;
+
+      --  Ignored
+      --   - PECERR    PEC is not used
+      --   - TIMEOUT   SMBus mode only
+      --   - SMBALERT  SMBus mode only
    end On_Error_Interrupt;
 
    ------------------------
@@ -375,55 +600,7 @@ package body A0B.I2C.STM32F401_I2C is
          DMA1_Periph.S0CR.EN := False;
          --  Disable DMA stream
 
-         --  Transfer operation has been finished.
-
-         Self.Buffers (Self.Active).Transferred :=
-           Self.Buffers (Self.Active).Size;
-         Self.Buffers (Self.Active).State := Success;
-
-         if Self.Active /= Self.Buffers'Last then
-            Self.Active := @ + 1;
-            Self.Setup_Data_Receive;
-
-         else
-            declare
-               Stop : constant Boolean := Self.Stop;
-               --  Catch value, it can be changed by callback
-
-            begin
-               if Stop then
-                  Self.Peripheral.CR1.STOP := True;
-                  --  Send STOP condition when requested. There is no interrupt
-                  --  to handle unset of BUSY by hardware, so attempt to
-                  --  overlap send of STOP condition and processing of the
-                  --  recieved data by the device driver.
-               end if;
-
-               Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
-               --  Notify device driver about end of operation.
-
-               if Stop then
-                  --  Wait till end of the transaction on the bus.
-
-                  while Self.Peripheral.SR2.BUSY loop
-                     null;
-                  end loop;
-
-                  Self.Stop := False;
-
-                  declare
-                     Device  : constant I2C_Device_Driver_Access :=
-                       Device_Locks.Device (Self.Device_Lock);
-                     Success : Boolean := True;
-
-                  begin
-                     Device_Locks.Release (Self.Device_Lock, Device, Success);
-
-                     Device.On_Transaction_Completed;
-                  end;
-               end if;
-            end;
-         end if;
+         Self.Complte_Transfer;
 
       else
          raise Program_Error;
@@ -451,55 +628,7 @@ package body A0B.I2C.STM32F401_I2C is
          DMA1_Periph.S6CR.EN := False;
          --  Disable DMA stream
 
-         --  Update operation status
-
-         Self.Buffers (Self.Active).Transferred :=
-           Self.Buffers (Self.Active).Size;
-         Self.Buffers (Self.Active).State := Success;
-
-         if Self.Buffers'Last /= Self.Active then
-            Self.Active := @ + 1;
-            Self.Setup_Data_Transmit;
-
-         else
-            declare
-               Stop : constant Boolean := Self.Stop;
-               --  Catch value, it can be changed by callback
-
-            begin
-               if Stop then
-                  Self.Peripheral.CR1.STOP := True;
-                  --  Send STOP condition when requested. There is no interrupt
-                  --  to handle unset of BUSY by hardware, so attempt to
-                  --  overlap send of STOP condition and processing of the
-                  --  recieved data by the device driver.
-               end if;
-
-               Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
-               --  Notify device driver about end of operation.
-
-               if Stop then
-                  --  Wait till end of the transaction on the bus.
-
-                  while Self.Peripheral.SR2.BUSY loop
-                     null;
-                  end loop;
-
-                  Self.Stop := False;
-
-                  declare
-                     Device  : constant I2C_Device_Driver_Access :=
-                       Device_Locks.Device (Self.Device_Lock);
-                     Success : Boolean := True;
-
-                  begin
-                     Device_Locks.Release (Self.Device_Lock, Device, Success);
-
-                     Device.On_Transaction_Completed;
-                  end;
-               end if;
-            end;
-         end if;
+         Self.Complte_Transfer;
 
       else
          raise Program_Error;
@@ -536,93 +665,38 @@ package body A0B.I2C.STM32F401_I2C is
 
       Self.Device    := Device.Target_Address;
       Self.Operation := Read;
+      Self.Stream    := Self.Receive_Stream;
       Self.Buffers   := Buffers'Unrestricted_Access;
       Self.Active    := 0;
       Self.Stop      := Stop;
 
-      Self.Setup_Data_Receive;
+      Self.Setup_Data_Transfer;
 
       Self.Peripheral.CR1.START := True;
       --  Send START condition
    end Read;
 
-   ------------------------
-   -- Setup_Data_Receive --
-   ------------------------
+   -------------------------
+   -- Setup_Data_Transfer --
+   -------------------------
 
-   procedure Setup_Data_Receive (Self : in out Master_Controller'Class) is
+   procedure Setup_Data_Transfer (Self : in out Master_Controller'Class) is
    begin
       --  Configure DMA transfer
 
-      DMA1_Periph.S0NDTR.NDT :=
-        S6NDTR_NDT_Field (Self.Buffers (Self.Active).Size);
-      DMA1_Periph.S0M0AR :=
-        Interfaces.Unsigned_32
-          (System.Storage_Elements.To_Integer
-             (Self.Buffers (Self.Active).Address));
-
-      --  Mark last DMA transfer operation
+      Self.Stream.Set_Memory_Address (Self.Buffers (Self.Active).Address);
+      Self.Stream.Set_Data_Length
+        (Interfaces.Unsigned_16 (Self.Buffers (Self.Active).Size));
 
       Self.Peripheral.CR2.LAST :=  Self.Buffers'Last = Self.Active;
-
-      --  Reset state of the DMA stream
-
-      declare
-         Aux : LIFCR_Register := DMA1_Periph.LIFCR;
-
-      begin
-         Aux.CFEIF0  := True;
-         Aux.CDMEIF0 := True;
-         Aux.CTEIF0  := True;
-         Aux.CHTIF0  := True;
-         Aux.CTCIF0  := True;
-
-         DMA1_Periph.LIFCR := Aux;
-      end;
-
-      --  Enable DMA stream
-
-      DMA1_Periph.S0CR.EN := True;
-   end Setup_Data_Receive;
-
-   -------------------------
-   -- Setup_Data_Transmit --
-   -------------------------
-
-   procedure Setup_Data_Transmit (Self : in out Master_Controller'Class) is
-   begin
-      --  Configure DMA transfer
-
-      DMA1_Periph.S6NDTR.NDT :=
-        S6NDTR_NDT_Field (Self.Buffers (Self.Active).Size);
-      DMA1_Periph.S6M0AR :=
-        Interfaces.Unsigned_32
-          (System.Storage_Elements.To_Integer
-             (Self.Buffers (Self.Active).Address));
-
       --  Mark last DMA transfer operation
 
-      Self.Peripheral.CR2.LAST :=  Self.Buffers'Last = Self.Active;
-
+      Self.Stream.Clear_Status;
       --  Reset state of the DMA stream
 
-      declare
-         Aux : HIFCR_Register := DMA1_Periph.HIFCR;
-
-      begin
-         Aux.CFEIF6  := True;
-         Aux.CDMEIF6 := True;
-         Aux.CTEIF6  := True;
-         Aux.CHTIF6  := True;
-         Aux.CTCIF6  := True;
-
-         DMA1_Periph.HIFCR := Aux;
-      end;
-
+      Self.Stream.Enable;
       --  Enable DMA stream
-
-      DMA1_Periph.S6CR.EN := True;
-   end Setup_Data_Transmit;
+   end Setup_Data_Transfer;
 
    -----------
    -- Start --
@@ -726,11 +800,12 @@ package body A0B.I2C.STM32F401_I2C is
 
       Self.Device    := Device.Target_Address;
       Self.Operation := Write;
+      Self.Stream    := Self.Transmit_Stream;
       Self.Buffers   := Buffers'Unrestricted_Access;
       Self.Active    := 0;
       Self.Stop      := Stop;
 
-      Self.Setup_Data_Transmit;
+      Self.Setup_Data_Transfer;
 
       Self.Peripheral.CR1.START := True;
       --  Send START condition
