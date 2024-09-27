@@ -22,8 +22,14 @@ package body A0B.I2C.STM32F401_I2C is
    procedure Setup_Data_Transfer (Self : in out Master_Controller'Class);
    --  Setup DMA data transmission for the active buffer.
 
-   procedure Complte_Transfer (Self : in out Master_Controller'Class);
+   procedure Complte_Transfer
+     (Self       : in out Master_Controller'Class;
+      Successful : Boolean);
    --  Complete transfer of the chunk of the data.
+   --
+   --  When Success is False it means Acknowledge Failure, current operation
+   --  is marked as incomplete, but successful, while following operations
+   --  are marked as failed.
 
    package DMA_Streams is
 
@@ -36,6 +42,9 @@ package body A0B.I2C.STM32F401_I2C is
       overriding procedure Set_Data_Length
         (Self   : in out DMA_Stream0;
          Length : Interfaces.Unsigned_16);
+
+      overriding function Get_Data_Length
+        (Self : DMA_Stream0) return Interfaces.Unsigned_16;
 
       overriding procedure Clear_Status (Self : in out DMA_Stream0);
 
@@ -50,6 +59,9 @@ package body A0B.I2C.STM32F401_I2C is
       overriding procedure Set_Data_Length
         (Self   : in out DMA_Stream6;
          Length : Interfaces.Unsigned_16);
+
+      overriding function Get_Data_Length
+        (Self : DMA_Stream6) return Interfaces.Unsigned_16;
 
       overriding procedure Clear_Status (Self : in out DMA_Stream6);
 
@@ -116,6 +128,26 @@ package body A0B.I2C.STM32F401_I2C is
       end Enable;
 
       ---------------------
+      -- Get_Data_Length --
+      ---------------------
+
+      overriding function Get_Data_Length
+        (Self : DMA_Stream0) return Interfaces.Unsigned_16 is
+      begin
+         return Self.Peripheral.S0NDTR.NDT;
+      end Get_Data_Length;
+
+      ---------------------
+      -- Get_Data_Length --
+      ---------------------
+
+      overriding function Get_Data_Length
+        (Self : DMA_Stream6) return Interfaces.Unsigned_16 is
+      begin
+         return Self.Peripheral.S6NDTR.NDT;
+      end Get_Data_Length;
+
+      ---------------------
       -- Set_Data_Length --
       ---------------------
 
@@ -174,15 +206,47 @@ package body A0B.I2C.STM32F401_I2C is
    -- Complte_Transfer --
    ----------------------
 
-   procedure Complte_Transfer (Self : in out Master_Controller'Class) is
+   procedure Complte_Transfer
+     (Self       : in out Master_Controller'Class;
+      Successful : Boolean)
+   is
+      Remaining_Data_Length : constant Interfaces.Unsigned_32 :=
+        Interfaces.Unsigned_32 (Self.Stream.Get_Data_Length);
+      Force_Stop            : Boolean := False;
+
    begin
       --  Transfer operation has been finished.
 
       Self.Buffers (Self.Active).Transferred :=
-        Self.Buffers (Self.Active).Size;
-      Self.Buffers (Self.Active).State := Success;
+        Self.Buffers (Self.Active).Size - Remaining_Data_Length;
 
-      if Self.Active /= Self.Buffers'Last then
+      if Successful then
+         Self.Buffers (Self.Active).State := Success;
+
+      else
+         if Self.Buffers (Self.Active).Size = 0
+           or Self.Buffers (Self.Active).Transferred = 0
+         then
+            --  Probe operation without data transmission, or data transmission
+            --  is not started at all, process as failure.
+
+            Self.Buffers (Self.Active).State := Failure;
+
+         else
+            Self.Buffers (Self.Active).State := Success;
+         end if;
+
+         for J in Self.Active + 1 .. Self.Buffers'Last loop
+            Self.Buffers (J).State := Failure;
+         end loop;
+
+         Self.Stop  := True;
+         Force_Stop := True;
+      end if;
+
+      if Self.Active /= Self.Buffers'Last
+        and not Force_Stop
+      then
          Self.Active := @ + 1;
          Self.Setup_Data_Transfer;
 
@@ -510,7 +574,9 @@ package body A0B.I2C.STM32F401_I2C is
       end if;
 
       if Status.AF then
-         raise Program_Error;
+         Self.Peripheral.SR1.AF := False;
+
+         Self.Complte_Transfer (Successful => False);
       end if;
 
       if Status.ARLO then
@@ -600,7 +666,7 @@ package body A0B.I2C.STM32F401_I2C is
          DMA1_Periph.S0CR.EN := False;
          --  Disable DMA stream
 
-         Self.Complte_Transfer;
+         Self.Complte_Transfer (Successful => True);
 
       else
          raise Program_Error;
@@ -628,7 +694,7 @@ package body A0B.I2C.STM32F401_I2C is
          DMA1_Periph.S6CR.EN := False;
          --  Disable DMA stream
 
-         Self.Complte_Transfer;
+         Self.Complte_Transfer (Successful => True);
 
       else
          raise Program_Error;

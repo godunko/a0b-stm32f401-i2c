@@ -75,6 +75,9 @@ private
      (Self   : in out DMA_Stream;
       Length : Interfaces.Unsigned_16) is abstract;
 
+   not overriding function Get_Data_Length
+     (Self : DMA_Stream) return Interfaces.Unsigned_16 is abstract;
+
    not overriding procedure Clear_Status (Self : in out DMA_Stream) is abstract;
 
    not overriding procedure Enable (Self : in out DMA_Stream) is abstract;
