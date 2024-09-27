@@ -92,9 +92,6 @@ private
 
    end Device_Locks;
 
---     --  type Controller_State is
---     --    (Unused, Configured, Read, Write, Stop_Requested);
-
    type Operation_Kind is (Read, Write);
 
    type Master_Controller
@@ -105,13 +102,12 @@ private
       Device_Lock : Device_Locks.Lock;
       Device      : Device_Address;
       Operation   : Operation_Kind;
---        --  State       : Controller_State := Unused;
---        --  Buffer      : access Unsigned_8_Array;
---        --  Status      : access Transfer_Status;
       Buffers     : access Buffer_Descriptor_Array;
       Active      : A0B.Types.Unsigned_32;
---        Address     : System.Address;
       Stop        : Boolean;
+      --  Send of STOP condition is requested after completion of the current
+      --  operation. This flag is used to reject erroneous Read/Write request
+      --  after completion of the transfer and before release of the bus.
    end record;
 
    overriding procedure Start

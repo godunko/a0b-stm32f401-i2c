@@ -410,6 +410,8 @@ package body A0B.I2C.STM32F401_I2C is
                      null;
                   end loop;
 
+                  Self.Stop := False;
+
                   declare
                      Device  : constant I2C_Device_Driver_Access :=
                        Device_Locks.Device (Self.Device_Lock);
@@ -484,6 +486,8 @@ package body A0B.I2C.STM32F401_I2C is
                      null;
                   end loop;
 
+                  Self.Stop := False;
+
                   declare
                      Device  : constant I2C_Device_Driver_Access :=
                        Device_Locks.Device (Self.Device_Lock);
@@ -517,6 +521,12 @@ package body A0B.I2C.STM32F401_I2C is
       Device_Locks.Acquire (Self.Device_Lock, Device, Success);
 
       if not Success then
+         return;
+      end if;
+
+      if Self.Stop then
+         Success := False;
+
          return;
       end if;
 
@@ -701,6 +711,12 @@ package body A0B.I2C.STM32F401_I2C is
       Device_Locks.Acquire (Self.Device_Lock, Device, Success);
 
       if not Success then
+         return;
+      end if;
+
+      if Self.Stop then
+         Success := False;
+
          return;
       end if;
 
