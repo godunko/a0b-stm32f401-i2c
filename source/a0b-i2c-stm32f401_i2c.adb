@@ -348,51 +348,8 @@ package body A0B.I2C.STM32F401_I2C is
 
       elsif Status.BTF then
          --  Byte transfer finished.
-         --
-         --  This flag is set in transmit operation only, when data has been
-         --  transmitted by the DMA controller.
 
-         --  Disable DMA stream
-
-         DMA1_Periph.S6CR.EN := False;
-
-         --  Update operation status
-
-         Self.Buffers (Self.Active).Transferred :=
-           Self.Buffers (Self.Active).Size;
-         Self.Buffers (Self.Active).State := Success;
-
-         if Self.Buffers'Last /= Self.Active then
-            Self.Active := @ + 1;
-            Self.Setup_Data_Transmit;
-
-         else
-            --  Send STOP condition when requested.
-
-            if Self.Stop then
-               Self.Peripheral.CR1.STOP := True;
-
-               --  XXX Handle STOP !!!
-
-               --  while Self.Peripheral.SR2.BUSY loop
-               --     null;
-               --  end loop;
-            end if;
-
-            --  Notify device driver.
-
-            Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
-            --  declare
-            --     Device  : constant I2C_Device_Driver_Access :=
-            --       Device_Locks.Device (Self.Device_Lock);
-            --     --  Success : Boolean := True;
-            --
-            --  begin
-            --     Device_Locks.Release (Self.Device_Lock, Device, Success);
-            --
-            --     Device.On_Transfer_Completed;
-            --  end;
-         end if;
+         null;  --  XXX ??? single address, to probe by check of ACK response
 
       elsif Status.TxE then
          --  Generally it should never happened because CR2.ITBUFEN is set to
@@ -411,42 +368,8 @@ package body A0B.I2C.STM32F401_I2C is
       else
          --  It looks like case when DMA receive has been completed.
 
-         if Self.Operation /= Read then
-            raise Program_Error;
-         end if;
+         null;
 
-         --  Disable DMA stream
-
-         DMA1_Periph.S0CR.EN := False;
-
-         --  Transfer operation has been finished.
-
-         Self.Buffers (Self.Active).Transferred :=
-           Self.Buffers (Self.Active).Size;
-         Self.Buffers (Self.Active).State := Success;
-
-         if Self.Active /= Self.Buffers'Last then
-            Self.Active := @ + 1;
-            Self.Setup_Data_Receive;
-
-         else
-            --  Send STOP condition when requested.
-
-            if Self.Stop then
-               Self.Peripheral.CR1.STOP := True;
-
-               --  XXX Handle STOP !!!
-
-               --  while Self.Peripheral.SR2.BUSY loop
-               --     null;
-               --  end loop;
-            end if;
-
-            --  Notify device driver.
-
-            Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
-         end if;
-      --     raise Program_Error;
       end if;
 
 --        Status  : constant A0B.SVD.STM32H723.I2C.ISR_Register :=
@@ -529,8 +452,6 @@ package body A0B.I2C.STM32F401_I2C is
    procedure On_Receive_Stream_Interrupt
      (Self : in out Master_Controller'Class)
    is
-      pragma Unreferenced (Self);
-
       Mask  : constant S0CR_Register := DMA1_Periph.S0CR;
       State : constant LISR_Register := DMA1_Periph.LISR;
 
@@ -538,15 +459,50 @@ package body A0B.I2C.STM32F401_I2C is
       if State.TCIF0 and Mask.TCIE then
          --  Transmission done.
 
-         --  DMA2_Periph.HIFCR.CFEIF6  := True;
-         --  DMA2_Periph.HIFCR.CDMEIF6 := True;
-         --  DMA2_Periph.HIFCR.CTEIF6  := True;
          DMA1_Periph.LIFCR.CHTIF0 := True;
          DMA1_Periph.LIFCR.CTCIF0 := True;
          --  Clear TC and HT status flags
 
          DMA1_Periph.S0CR.EN := False;
          --  Disable DMA stream
+
+         --  Transfer operation has been finished.
+
+         Self.Buffers (Self.Active).Transferred :=
+           Self.Buffers (Self.Active).Size;
+         Self.Buffers (Self.Active).State := Success;
+
+         if Self.Active /= Self.Buffers'Last then
+            Self.Active := @ + 1;
+            Self.Setup_Data_Receive;
+
+         else
+            --  Send STOP condition when requested.
+
+            if Self.Stop then
+               Self.Peripheral.CR1.STOP := True;
+
+               --  XXX Handle STOP !!!
+
+               --  while Self.Peripheral.SR2.BUSY loop
+               --     null;
+               --  end loop;
+            end if;
+
+            --  Notify device driver.
+
+            Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
+            --  declare
+            --     Device  : constant I2C_Device_Driver_Access :=
+            --       Device_Locks.Device (Self.Device_Lock);
+            --     --  Success : Boolean := True;
+            --
+            --  begin
+            --     Device_Locks.Release (Self.Device_Lock, Device, Success);
+            --
+            --     Device.On_Transfer_Completed;
+            --  end;
+         end if;
 
       else
          raise Program_Error;
@@ -560,24 +516,57 @@ package body A0B.I2C.STM32F401_I2C is
    procedure On_Transmit_Stream_Interrupt
      (Self : in out Master_Controller'Class)
    is
-      pragma Unreferenced (Self);
-
       Mask  : constant S6CR_Register := DMA1_Periph.S6CR;
       State : constant HISR_Register := DMA1_Periph.HISR;
 
    begin
       if State.TCIF6 and Mask.TCIE then
-         --  Transmission done.
+         --  Transmission done
 
-         --  DMA2_Periph.HIFCR.CFEIF6  := True;
-         --  DMA2_Periph.HIFCR.CDMEIF6 := True;
-         --  DMA2_Periph.HIFCR.CTEIF6  := True;
          DMA1_Periph.HIFCR.CHTIF6 := True;
          DMA1_Periph.HIFCR.CTCIF6 := True;
          --  Clear TC and HT status flags
 
          DMA1_Periph.S6CR.EN := False;
          --  Disable DMA stream
+
+         --  Update operation status
+
+         Self.Buffers (Self.Active).Transferred :=
+           Self.Buffers (Self.Active).Size;
+         Self.Buffers (Self.Active).State := Success;
+
+         if Self.Buffers'Last /= Self.Active then
+            Self.Active := @ + 1;
+            Self.Setup_Data_Transmit;
+
+         else
+            --  Send STOP condition when requested.
+
+            if Self.Stop then
+               Self.Peripheral.CR1.STOP := True;
+
+               --  XXX Handle STOP !!!
+
+               --  while Self.Peripheral.SR2.BUSY loop
+               --     null;
+               --  end loop;
+            end if;
+
+            --  Notify device driver.
+
+            Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
+            --  declare
+            --     Device  : constant I2C_Device_Driver_Access :=
+            --       Device_Locks.Device (Self.Device_Lock);
+            --     --  Success : Boolean := True;
+            --
+            --  begin
+            --     Device_Locks.Release (Self.Device_Lock, Device, Success);
+            --
+            --     Device.On_Transfer_Completed;
+            --  end;
+         end if;
 
       else
          raise Program_Error;
