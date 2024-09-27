@@ -477,31 +477,41 @@ package body A0B.I2C.STM32F401_I2C is
             Self.Setup_Data_Receive;
 
          else
-            --  Send STOP condition when requested.
+            declare
+               Stop : constant Boolean := Self.Stop;
+               --  Catch value, it can be changed by callback
 
-            if Self.Stop then
-               Self.Peripheral.CR1.STOP := True;
+            begin
+               if Stop then
+                  Self.Peripheral.CR1.STOP := True;
+                  --  Send STOP condition when requested. There is no interrupt
+                  --  to handle unset of BUSY by hardware, so attempt to
+                  --  overlap send of STOP condition and processing of the
+                  --  recieved data by the device driver.
+               end if;
 
-               --  XXX Handle STOP !!!
+               Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
+               --  Notify device driver about end of operation.
 
-               --  while Self.Peripheral.SR2.BUSY loop
-               --     null;
-               --  end loop;
-            end if;
+               if Stop then
+                  --  Wait till end of the transaction on the bus.
 
-            --  Notify device driver.
+                  while Self.Peripheral.SR2.BUSY loop
+                     null;
+                  end loop;
 
-            Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
-            --  declare
-            --     Device  : constant I2C_Device_Driver_Access :=
-            --       Device_Locks.Device (Self.Device_Lock);
-            --     --  Success : Boolean := True;
-            --
-            --  begin
-            --     Device_Locks.Release (Self.Device_Lock, Device, Success);
-            --
-            --     Device.On_Transfer_Completed;
-            --  end;
+                  declare
+                     Device  : constant I2C_Device_Driver_Access :=
+                       Device_Locks.Device (Self.Device_Lock);
+                     Success : Boolean := True;
+
+                  begin
+                     Device_Locks.Release (Self.Device_Lock, Device, Success);
+
+                     Device.On_Transaction_Completed;
+                  end;
+               end if;
+            end;
          end if;
 
       else
@@ -541,31 +551,41 @@ package body A0B.I2C.STM32F401_I2C is
             Self.Setup_Data_Transmit;
 
          else
-            --  Send STOP condition when requested.
+            declare
+               Stop : constant Boolean := Self.Stop;
+               --  Catch value, it can be changed by callback
 
-            if Self.Stop then
-               Self.Peripheral.CR1.STOP := True;
+            begin
+               if Stop then
+                  Self.Peripheral.CR1.STOP := True;
+                  --  Send STOP condition when requested. There is no interrupt
+                  --  to handle unset of BUSY by hardware, so attempt to
+                  --  overlap send of STOP condition and processing of the
+                  --  recieved data by the device driver.
+               end if;
 
-               --  XXX Handle STOP !!!
+               Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
+               --  Notify device driver about end of operation.
 
-               --  while Self.Peripheral.SR2.BUSY loop
-               --     null;
-               --  end loop;
-            end if;
+               if Stop then
+                  --  Wait till end of the transaction on the bus.
 
-            --  Notify device driver.
+                  while Self.Peripheral.SR2.BUSY loop
+                     null;
+                  end loop;
 
-            Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
-            --  declare
-            --     Device  : constant I2C_Device_Driver_Access :=
-            --       Device_Locks.Device (Self.Device_Lock);
-            --     --  Success : Boolean := True;
-            --
-            --  begin
-            --     Device_Locks.Release (Self.Device_Lock, Device, Success);
-            --
-            --     Device.On_Transfer_Completed;
-            --  end;
+                  declare
+                     Device  : constant I2C_Device_Driver_Access :=
+                       Device_Locks.Device (Self.Device_Lock);
+                     Success : Boolean := True;
+
+                  begin
+                     Device_Locks.Release (Self.Device_Lock, Device, Success);
+
+                     Device.On_Transaction_Completed;
+                  end;
+               end if;
+            end;
          end if;
 
       else
