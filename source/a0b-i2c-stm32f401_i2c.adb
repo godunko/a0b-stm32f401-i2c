@@ -345,104 +345,14 @@ package body A0B.I2C.STM32F401_I2C is
 
       elsif Status.ADD10 then
          raise Program_Error;
-
-      elsif Status.BTF then
-         --  Byte transfer finished.
-
-         null;  --  XXX ??? single address, to probe by check of ACK response
-
-      elsif Status.TxE then
-         --  Generally it should never happened because CR2.ITBUFEN is set to
-         --  False, however, it happned. Anyway, there is nothing to do here,
-         --  DMA starts transmission automatically.
-
-         null;
-
-      elsif Status.RxNE then
-         raise Program_Error;
-
-      --  elsif Status.ARLO then
-      --     raise Program_Error;
-      --
-      --  elsif
-      else
-         --  It looks like case when DMA receive has been completed.
-
-         null;
-
       end if;
 
---        Status  : constant A0B.SVD.STM32H723.I2C.ISR_Register :=
---          Self.Peripheral.ISR;
---        Mask    : constant A0B.SVD.STM32H723.I2C.CR1_Register :=
---          Self.Peripheral.CR1;
---
-   --  begin
-   --     raise Program_Error;
---        if Status.TXIS then
---           Self.Load_Into_TX;
---        end if;
---
---        if Status.RXNE then
---           Self.Store_From_RX;
---        end if;
---
---        if Status.TC and Mask.TCIE then
---           Self.Peripheral.CR1.TCIE := False;
---           --  Disable TC (and TCR) interrupt, it is active till master sends
---           --  START/STOP condition. Device driver need to be notified only
---           --  once, and there is nothing to do till ball is on device driver's
---           --  side.
---
---           if Self.Stop then
---              Self.Peripheral.CR2.STOP := True;
---           end if;
---
---           Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
---        end if;
---
---        if Status.NACKF then
---           Self.Peripheral.ICR.NACKCF := True;
---
---           for J in Self.Active .. Self.Buffers'Last loop
---              Self.Buffers (Self.Active).State := Failure;
---           end loop;
---        end if;
---
---        if Status.STOPF then
---           Self.Peripheral.ICR.STOPCF := True;
---           --  Clear STOPF interrupt status
---
---           --  if Self.  ???? Set status of the buffer ???
---
---           declare
---              Device  : constant I2C_Device_Driver_Access :=
---                Device_Locks.Device (Self.Device_Lock);
---              Success : Boolean := True;
---
---           begin
---              Device_Locks.Release (Self.Device_Lock, Device, Success);
---
---              Device.On_Transaction_Completed;
---           end;
---        end if;
---
---        -----------------------------------------------------------------------
---
---        if Status.TCR and Mask.TCIE then
---           raise Program_Error;
---           --  Self.Peripheral.CR1.TCIE := False;
---           --  --  Disable TCR and TC interrupts, software should write to NBYTES
---           --  --  to clear this flag. It will be re-enabled after this write by
---           --  --  Write/Read procedure.
---           --
---           --  Self.Status.State := Success;
---           --  Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
---        end if;
---
---        if Self.Peripheral.ISR.ADDR then
---           raise Program_Error;
---        end if;
+      --  Other status bits sould be handled by this handler, but they are
+      --  unused:
+      --   - STOPF  Slave mode only
+      --   - BTF    Meaningless and handled by DMA interrupt handler
+      --   - RxNE   Never set due to use of DMA
+      --   - TxE    Meaningless and handled by DMA interrupt handler
    end On_Event_Interrupt;
 
    ---------------------------------
