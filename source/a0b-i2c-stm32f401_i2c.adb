@@ -19,7 +19,6 @@ with A0B.STM32F401.SVD.DMA; use A0B.STM32F401.SVD.DMA;
 package body A0B.I2C.STM32F401_I2C is
 
    use type A0B.Types.Unsigned_32;
-   --  use A0B.STM32F401.SVD.I2C;
 
    procedure Setup_Data_Transmit (Self : in out Master_Controller'Class)
      with Pre => Self.Operation = Write;
