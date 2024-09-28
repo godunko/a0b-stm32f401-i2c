@@ -257,6 +257,17 @@ package body A0B.I2C.STM32F401_I2C is
 
          begin
             if Stop then
+               if Successful and Self.Operation = Write then
+                  --  Wait till last byte move into shift register, overwise
+                  --  set of STOP drop this byte.
+                  --
+                  --  XXX Can it handled in the event handler?
+
+                  while not Self.Peripheral.SR1.TxE loop
+                     null;
+                  end loop;
+               end if;
+
                Self.Peripheral.CR1.STOP := True;
                --  Send STOP condition when requested. There is no interrupt to
                --  handle unset of BUSY by hardware, so attempt to overlap send
