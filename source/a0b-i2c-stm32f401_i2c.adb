@@ -340,8 +340,6 @@ package body A0B.I2C.STM32F401_I2C is
          --  TxE = 1 or RxNE = 1 does not generate any interrupt.
          Aux.DMAEN   := True;   --  DMA requests enabled
 
-         --        LAST           => Boolean,
-
          Self.Peripheral.CR2 := Aux;
       end;
 
@@ -754,8 +752,19 @@ package body A0B.I2C.STM32F401_I2C is
       Self.Stream.Set_Data_Length
         (Interfaces.Unsigned_16 (Self.Buffers (Self.Active).Size));
 
-      Self.Peripheral.CR2.LAST :=  Self.Buffers'Last = Self.Active;
-      --  Mark last DMA transfer operation
+      --  For read operation I2C controller need to be configured to
+      --  generate acknowledge:
+      --   - CR1.ACK should be set when total number of received bytes
+      --     greater than 1
+      --   - CR2.LAST should be set when this DMA transfer is last transer
+      --     in the operation
+      --
+      --  These flags are ignored for write operation.
+
+      Self.Peripheral.CR1.ACK  :=
+        Self.Active /= Self.Buffers'Last
+          or Self.Buffers (Self.Active).Size > 1;
+      Self.Peripheral.CR2.LAST := Self.Active = Self.Buffers'Last;
 
       Self.Stream.Clear_Status;
       --  Reset state of the DMA stream
