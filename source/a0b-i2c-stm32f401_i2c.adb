@@ -247,10 +247,21 @@ package body A0B.I2C.STM32F401_I2C is
       if Self.Active /= Self.Buffers'Last
         and not Force_Stop
       then
+         --  Setup data transfer for the next buffer.
+
          Self.Active := @ + 1;
          Self.Setup_Data_Transfer;
 
+      elsif Self.Operation = Write and not Force_Stop then
+         --  Write operation is almost done, wait till transmission of the last
+         --  byte is done and handle completion of the operation in the even
+         --  handler.
+
+         null;
+
       else
+         --  Read operation is done.
+
          declare
             Stop : constant Boolean := Self.Stop;
             --  Catch value, it can be changed by callback
@@ -639,11 +650,52 @@ package body A0B.I2C.STM32F401_I2C is
               Self.Peripheral.SR2 with Unreferenced;
 
          begin
-            null;
+            Self.BTF_Enabled := True;
          end;
 
       elsif Status.ADD10 then
          raise Program_Error;
+
+      elsif Status.BTF and Self.BTF_Enabled then
+         declare
+            Stop : constant Boolean := Self.Stop;
+            --  Catch value, it can be changed by callback
+
+         begin
+            Self.BTF_Enabled := False;
+
+            if Stop then
+               Self.Peripheral.CR1.STOP := True;
+               --  Send STOP condition when requested. There is no interrupt to
+               --  handle unset of BUSY by hardware, so attempt to overlap send
+               --  of STOP condition and processing of the recieved data by the
+               --  device driver.
+            end if;
+
+            Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
+            --  Notify device driver about end of operation.
+
+            if Stop then
+               --  Wait till end of the transaction on the bus.
+
+               while Self.Peripheral.SR2.BUSY loop
+                  null;
+               end loop;
+
+               Self.Stop := False;
+
+               declare
+                  Device  : constant I2C_Device_Driver_Access :=
+                    Device_Locks.Device (Self.Device_Lock);
+                  Success : Boolean := True;
+
+               begin
+                  Device_Locks.Release (Self.Device_Lock, Device, Success);
+
+                  Device.On_Transaction_Completed;
+               end;
+            end if;
+         end;
       end if;
 
       --  Other status bits sould be handled by this handler, but they are

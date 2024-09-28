@@ -102,6 +102,12 @@ private
 
       Transmit_Stream : access DMA_Stream'Class;
       Receive_Stream  : access DMA_Stream'Class;
+
+      BTF_Enabled     : Boolean;
+      --  This flag is used to "mask" BTF flag when write operation is
+      --  completed, but transaction is not closed. In particular, it "masks"
+      --  event interrupt till START condition of the next operation is
+      --  processed.
    end record;
 
    overriding procedure Start
