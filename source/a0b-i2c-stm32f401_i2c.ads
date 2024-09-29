@@ -118,10 +118,4 @@ private
 
    procedure On_Error_Interrupt (Self : in out Master_Controller'Class);
 
-   procedure On_Transmit_Stream_Interrupt
-     (Self : in out Master_Controller'Class);
-
-   procedure On_Receive_Stream_Interrupt
-     (Self : in out Master_Controller'Class);
-
 end A0B.I2C.STM32F401_I2C;

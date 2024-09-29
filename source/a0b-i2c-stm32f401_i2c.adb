@@ -14,6 +14,7 @@ with System.Atomic_Primitives;
 with System.Storage_Elements;
 
 with A0B.ARMv7M.NVIC_Utilities;
+with A0B.Callbacks.Generic_Non_Dispatching;
 with A0B.STM32F401.SVD.DMA; use A0B.STM32F401.SVD.DMA;
 
 package body A0B.I2C.STM32F401_I2C is
@@ -31,6 +32,20 @@ package body A0B.I2C.STM32F401_I2C is
    --  When Success is False it means Acknowledge Failure, current operation
    --  is marked as incomplete, but successful, while following operations
    --  are marked as failed.
+
+   procedure On_Transmit_Stream_Interrupt
+     (Self : in out Master_Controller'Class);
+
+   procedure On_Receive_Stream_Interrupt
+     (Self : in out Master_Controller'Class);
+
+   package On_Transmit_Stream_Interrupt_Callbacks is
+     new A0B.Callbacks.Generic_Non_Dispatching
+           (Master_Controller, On_Transmit_Stream_Interrupt);
+
+   package On_Receive_Stream_Interrupt_Callbacks is
+     new A0B.Callbacks.Generic_Non_Dispatching
+           (Master_Controller, On_Receive_Stream_Interrupt);
 
    ----------------------
    -- Complte_Transfer --
@@ -257,19 +272,23 @@ package body A0B.I2C.STM32F401_I2C is
       A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (Self.Event_Interrupt);
       A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (Self.Error_Interrupt);
 
-      --  Configure DMA stream (DMA 1 Stream 6 Channel 1)
+      --  Configure DMA stream for data transmit
 
       Self.Transmit_Stream.Configure_Memory_To_Peripheral
         (Channel    => 1,
          Peripheral => Self.Peripheral.DR'Address);
       Self.Transmit_Stream.Enable_Transfer_Complete_Interrupt;
+      Self.Transmit_Stream.Set_Interrupt_Callback
+        (On_Transmit_Stream_Interrupt_Callbacks.Create_Callback (Self));
 
-      --  Configure DMA stream (DMA 1 Stream 0 Channel 1)
+      --  Configure DMA stream for data receive
 
       Self.Receive_Stream.Configure_Peripheral_To_Memory
         (Channel    => 1,
          Peripheral => Self.Peripheral.DR'Address);
       Self.Receive_Stream.Enable_Transfer_Complete_Interrupt;
+      Self.Receive_Stream.Set_Interrupt_Callback
+        (On_Receive_Stream_Interrupt_Callbacks.Create_Callback (Self));
    end Configure;
 
    ------------------

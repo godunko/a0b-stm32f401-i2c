@@ -14,30 +14,6 @@ package body A0B.I2C.STM32F401_I2C.I2C1 is
    procedure I2C1_ER_Handler
      with Export, Convention => C, External_Name => "I2C1_ER_Handler";
 
-   procedure DMA1_Stream0_Handler
-     with Export, Convention => C, External_Name => "DMA1_Stream0_Handler";
-
-   procedure DMA1_Stream6_Handler
-     with Export, Convention => C, External_Name => "DMA1_Stream6_Handler";
-
-   --------------------------
-   -- DMA1_Stream0_Handler --
-   --------------------------
-
-   procedure DMA1_Stream0_Handler is
-   begin
-      I2C1.On_Receive_Stream_Interrupt;
-   end DMA1_Stream0_Handler;
-
-   --------------------------
-   -- DMA1_Stream6_Handler --
-   --------------------------
-
-   procedure DMA1_Stream6_Handler is
-   begin
-      I2C1.On_Transmit_Stream_Interrupt;
-   end DMA1_Stream6_Handler;
-
    ---------------------
    -- I2C1_ER_Handler --
    ---------------------
