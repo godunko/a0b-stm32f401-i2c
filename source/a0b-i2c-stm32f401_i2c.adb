@@ -15,6 +15,9 @@ with System.Storage_Elements;
 with A0B.ARMv7M.NVIC_Utilities;
 with A0B.STM32F401.SVD.DMA; use A0B.STM32F401.SVD.DMA;
 
+with A0B.STM32F401.DMA.DMA1.Stream0;
+with A0B.STM32F401.DMA.DMA1.Stream6;
+
 package body A0B.I2C.STM32F401_I2C is
 
    use type A0B.Types.Unsigned_32;
@@ -429,77 +432,19 @@ package body A0B.I2C.STM32F401_I2C is
 
       --  Configure DMA stream (DMA 1 Stream 6 Channel 1)
 
-      DMA1_Periph.S6CR :=
-        (EN     => False,   --  Stream disabled
-         DMEIE  => False,   --  DME interrupt disabled
-         TEIE   => False,   --  TE interrupt disabled
-         HTIE   => False,   --  HT interrupt disabled
-         TCIE   => True,    --  TC interrupt enabled
-         PFCTRL => False,   --  The DMA is the flow controller
-         DIR    => 2#01#,   --  Memory-to-peripheral
-         CIRC   => False,   --  Circular mode disabled
-         PINC   => False,   --  Peripheral address pointer is fixed
-         MINC   => True,
-         --  Memory address pointer is incremented after each data transfer
-         --  (increment is done according to MSIZE)
-         PSIZE  => 2#00#,   --  Byte (8-bit)
-         MSIZE  => 2#00#,   --  Byte (8-bit)
-         PINCOS => <>,      --  No meaning
-         PL     => 2#10#,   --  High
-         DBM    => False,   --  No buffer switching at the end of transfer
-         CT     => False,
-         --  The current target memory is Memory 0 (addressed by the
-         --  DMA_SxM0AR pointer)
-         ACK    => <>,      --  ??? Not documented
-         PBURST => 2#00#,   --  single transfer
-         MBURST => 2#00#,   --  single transfer
-         CHSEL  => 2#001#,  --  channel 1 selected
-         others => <>);
-      DMA1_Periph.S6PAR :=
-        Interfaces.Unsigned_32
-          (System.Storage_Elements.To_Integer (Self.Peripheral.DR'Address));
-
-      A0B.ARMv7M.NVIC_Utilities.Clear_Pending (A0B.STM32F401.DMA1_Stream6);
-      A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (A0B.STM32F401.DMA1_Stream6);
+      A0B.STM32F401.DMA.DMA1.Stream6.DMA1_Stream6.Configure_Memory_To_Peripheral
+        (Channel    => 1,
+         Peripheral => Self.Peripheral.DR'Address);
+      A0B.STM32F401.DMA.DMA1.Stream6.DMA1_Stream6.Enable_Transfer_Complete_Interrupt;
 
       Self.Transmit_Stream := S6'Access;
 
       --  Configure DMA stream (DMA 1 Stream 0 Channel 1)
 
-      DMA1_Periph.S0CR :=
-        (EN     => False,   --  Stream disabled
-         DMEIE  => False,   --  DME interrupt disabled
-         TEIE   => False,   --  TE interrupt disabled
-         HTIE   => False,   --  HT interrupt disabled
-         TCIE   => True,    --  TC interrupt enabled
-         PFCTRL => False,   --  The DMA is the flow controller
-         DIR    => 2#00#,   --  Peripheral-to-memory
-         CIRC   => False,   --  Circular mode disabled
-         PINC   => False,   --  Peripheral address pointer is fixed
-         MINC   => True,
-         --  Memory address pointer is incremented after each data transfer
-         --  (increment is done according to MSIZE)
-         PSIZE  => 2#00#,   --  Byte (8-bit)
-         MSIZE  => 2#00#,   --  Byte (8-bit)
-         PINCOS => <>,      --  No meaning
-         PL     => 2#10#,   --  High
-         DBM    => False,   --  No buffer switching at the end of transfer
-         CT     => False,
-         --  The current target memory is Memory 0 (addressed by the
-         --  DMA_SxM0AR pointer)
-         --  ACK    => <>,      --  ??? Not documented
-         PBURST => 2#00#,   --  single transfer
-         MBURST => 2#00#,   --  single transfer
-         CHSEL  => 2#001#,  --  channel 1 selected
-         others => <>);
-      DMA1_Periph.S0PAR :=
-        Interfaces.Unsigned_32
-          (System.Storage_Elements.To_Integer (Self.Peripheral.DR'Address));
-
-      --  DMA1_Periph.S0FCR :=
-
-      A0B.ARMv7M.NVIC_Utilities.Clear_Pending (A0B.STM32F401.DMA1_Stream0);
-      A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (A0B.STM32F401.DMA1_Stream0);
+      A0B.STM32F401.DMA.DMA1.Stream0.DMA1_Stream0.Configure_Peripheral_To_Memory
+        (Channel    => 1,
+         Peripheral => Self.Peripheral.DR'Address);
+      A0B.STM32F401.DMA.DMA1.Stream0.DMA1_Stream0.Enable_Transfer_Complete_Interrupt;
 
       Self.Receive_Stream := S0'Access;
    end Configure;
