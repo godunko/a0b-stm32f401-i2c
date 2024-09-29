@@ -15,9 +15,6 @@ with System.Storage_Elements;
 with A0B.ARMv7M.NVIC_Utilities;
 with A0B.STM32F401.SVD.DMA; use A0B.STM32F401.SVD.DMA;
 
-with A0B.STM32F401.DMA.DMA1.Stream0;
-with A0B.STM32F401.DMA.DMA1.Stream6;
-
 package body A0B.I2C.STM32F401_I2C is
 
    use type A0B.Types.Unsigned_32;
@@ -214,7 +211,7 @@ package body A0B.I2C.STM32F401_I2C is
       Successful : Boolean)
    is
       Remaining_Data_Length : constant Interfaces.Unsigned_32 :=
-        Interfaces.Unsigned_32 (Self.Stream.Get_Data_Length);
+        Interfaces.Unsigned_32 (Self.C_Stream.Get_Data_Length);
       Force_Stop            : Boolean := False;
 
    begin
@@ -432,21 +429,21 @@ package body A0B.I2C.STM32F401_I2C is
 
       --  Configure DMA stream (DMA 1 Stream 6 Channel 1)
 
-      A0B.STM32F401.DMA.DMA1.Stream6.DMA1_Stream6.Configure_Memory_To_Peripheral
+      Self.Transmit_Stream.Configure_Memory_To_Peripheral
         (Channel    => 1,
          Peripheral => Self.Peripheral.DR'Address);
-      A0B.STM32F401.DMA.DMA1.Stream6.DMA1_Stream6.Enable_Transfer_Complete_Interrupt;
+      Self.Transmit_Stream.Enable_Transfer_Complete_Interrupt;
 
-      Self.Transmit_Stream := S6'Access;
+      Self.C_Transmit_Stream := S6'Access;
 
       --  Configure DMA stream (DMA 1 Stream 0 Channel 1)
 
-      A0B.STM32F401.DMA.DMA1.Stream0.DMA1_Stream0.Configure_Peripheral_To_Memory
+      Self.Receive_Stream.Configure_Peripheral_To_Memory
         (Channel    => 1,
          Peripheral => Self.Peripheral.DR'Address);
-      A0B.STM32F401.DMA.DMA1.Stream0.DMA1_Stream0.Enable_Transfer_Complete_Interrupt;
+      Self.Receive_Stream.Enable_Transfer_Complete_Interrupt;
 
-      Self.Receive_Stream := S0'Access;
+      Self.C_Receive_Stream := S0'Access;
    end Configure;
 
    ------------------
@@ -737,7 +734,8 @@ package body A0B.I2C.STM32F401_I2C is
 
       Self.Device    := Device.Target_Address;
       Self.Operation := Read;
-      Self.Stream    := Self.Receive_Stream;
+      Self.C_Stream  := Self.C_Receive_Stream;
+      Self.Stream    := Self.Receive_Stream.all'Unchecked_Access;
       Self.Buffers   := Buffers'Unrestricted_Access;
       Self.Active    := 0;
       Self.Stop      := Stop;
@@ -756,8 +754,8 @@ package body A0B.I2C.STM32F401_I2C is
    begin
       --  Configure DMA transfer
 
-      Self.Stream.Set_Memory_Address (Self.Buffers (Self.Active).Address);
-      Self.Stream.Set_Data_Length
+      Self.C_Stream.Set_Memory_Address (Self.Buffers (Self.Active).Address);
+      Self.C_Stream.Set_Data_Length
         (Interfaces.Unsigned_16 (Self.Buffers (Self.Active).Size));
 
       --  For read operation I2C controller need to be configured to
@@ -774,10 +772,10 @@ package body A0B.I2C.STM32F401_I2C is
           or Self.Buffers (Self.Active).Size > 1;
       Self.Peripheral.CR2.LAST := Self.Active = Self.Buffers'Last;
 
-      Self.Stream.Clear_Status;
+      Self.C_Stream.Clear_Status;
       --  Reset state of the DMA stream
 
-      Self.Stream.Enable;
+      Self.C_Stream.Enable;
       --  Enable DMA stream
    end Setup_Data_Transfer;
 
@@ -883,7 +881,8 @@ package body A0B.I2C.STM32F401_I2C is
 
       Self.Device    := Device.Target_Address;
       Self.Operation := Write;
-      Self.Stream    := Self.Transmit_Stream;
+      Self.C_Stream  := Self.C_Transmit_Stream;
+      Self.Stream    := Self.Transmit_Stream.all'Unchecked_Access;
       Self.Buffers   := Buffers'Unrestricted_Access;
       Self.Active    := 0;
       Self.Stop      := Stop;
