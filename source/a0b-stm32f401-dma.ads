@@ -61,6 +61,14 @@ is
    procedure Enable_Transfer_Complete_Interrupt
      (Self : in out DMA_Stream'Class);
 
+   --  function Is_Transfer_Completed (Self : DMA_Stream'Class) return Boolean;
+
+   function Get_Masked_And_Clear_Transfer_Completed
+     (Self : in out DMA_Stream'Class) return Boolean;
+   --  Returns True when transfer completed and interrupt is enabled (both
+   --  xISR.TC and SxCR.TCIE are set to 1); and clear interrupt status
+   --  unconditionally.
+
 private
 
    type DMA_Controller

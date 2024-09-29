@@ -198,6 +198,75 @@ package body A0B.STM32F401.DMA is
       Registers.CR.TCIE := True;
    end Enable_Transfer_Complete_Interrupt;
 
+   ---------------------------------------------
+   -- Get_Masked_And_Clear_Transfer_Completed --
+   ---------------------------------------------
+
+   function Get_Masked_And_Clear_Transfer_Completed
+     (Self : in out DMA_Stream'Class) return Boolean
+   is
+      Registers : constant not null Stream_Registers_Access := Self.Registers;
+
+   begin
+      case Self.Stream is
+         when 0 =>
+            return Result : constant Boolean :=
+              Self.Controller.Peripheral.LISR.TCIF0 and Registers.CR.TCIE
+            do
+               Self.Controller.Peripheral.LIFCR.CTCIF0 := True;
+            end return;
+
+         when 1 =>
+            return Result : constant Boolean :=
+              Self.Controller.Peripheral.LISR.TCIF1 and Registers.CR.TCIE
+            do
+               Self.Controller.Peripheral.LIFCR.CTCIF1 := True;
+            end return;
+
+         when 2 =>
+            return Result : constant Boolean :=
+              Self.Controller.Peripheral.LISR.TCIF2 and Registers.CR.TCIE
+            do
+               Self.Controller.Peripheral.LIFCR.CTCIF2 := True;
+            end return;
+
+         when 3 =>
+            return Result : constant Boolean :=
+              Self.Controller.Peripheral.LISR.TCIF3 and Registers.CR.TCIE
+            do
+               Self.Controller.Peripheral.LIFCR.CTCIF3 := True;
+            end return;
+
+         when 4 =>
+            return Result : constant Boolean :=
+              Self.Controller.Peripheral.HISR.TCIF4 and Registers.CR.TCIE
+            do
+               Self.Controller.Peripheral.HIFCR.CTCIF4 := True;
+            end return;
+
+         when 5 =>
+            return Result : constant Boolean :=
+              Self.Controller.Peripheral.HISR.TCIF5 and Registers.CR.TCIE
+            do
+               Self.Controller.Peripheral.HIFCR.CTCIF5 := True;
+            end return;
+
+         when 6 =>
+            return Result : constant Boolean :=
+              Self.Controller.Peripheral.HISR.TCIF6 and Registers.CR.TCIE
+            do
+               Self.Controller.Peripheral.HIFCR.CTCIF6 := True;
+            end return;
+
+         when 7 =>
+            return Result : constant Boolean :=
+              Self.Controller.Peripheral.HISR.TCIF7 and Registers.CR.TCIE
+            do
+               Self.Controller.Peripheral.HIFCR.CTCIF7 := True;
+            end return;
+      end case;
+   end Get_Masked_And_Clear_Transfer_Completed;
+
    ---------------
    -- Registers --
    ---------------

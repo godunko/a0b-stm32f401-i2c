@@ -567,18 +567,10 @@ package body A0B.I2C.STM32F401_I2C is
    ---------------------------------
 
    procedure On_Receive_Stream_Interrupt
-     (Self : in out Master_Controller'Class)
-   is
-      Mask  : constant S0CR_Register := DMA1_Periph.S0CR;
-      State : constant LISR_Register := DMA1_Periph.LISR;
-
+     (Self : in out Master_Controller'Class) is
    begin
-      if State.TCIF0 and Mask.TCIE then
-         --  Transmission done.
-
-         DMA1_Periph.LIFCR.CHTIF0 := True;
-         DMA1_Periph.LIFCR.CTCIF0 := True;
-         --  Clear TC and HT status flags
+      if Self.Receive_Stream.Get_Masked_And_Clear_Transfer_Completed then
+         --  Transmission done, TC flag has been cleared
 
          Self.Receive_Stream.Disable;
          --  Disable DMA stream
@@ -595,18 +587,10 @@ package body A0B.I2C.STM32F401_I2C is
    ----------------------------------
 
    procedure On_Transmit_Stream_Interrupt
-     (Self : in out Master_Controller'Class)
-   is
-      Mask  : constant S6CR_Register := DMA1_Periph.S6CR;
-      State : constant HISR_Register := DMA1_Periph.HISR;
-
+     (Self : in out Master_Controller'Class) is
    begin
-      if State.TCIF6 and Mask.TCIE then
-         --  Transmission done
-
-         DMA1_Periph.HIFCR.CHTIF6 := True;
-         DMA1_Periph.HIFCR.CTCIF6 := True;
-         --  Clear TC and HT status flags
+      if Self.Transmit_Stream.Get_Masked_And_Clear_Transfer_Completed then
+         --  Transmission done, TC flag has been cleared
 
          Self.Transmit_Stream.Disable;
          --  Disable DMA stream
