@@ -9,8 +9,6 @@
 
 --  pragma Restrictions (No_Elaboration_Code);
 
-private with Interfaces;
-
 with A0B.ARMv7M;
 with A0B.STM32F401.SVD.I2C;
 
@@ -69,9 +67,6 @@ private
    type DMA_Stream
      (Peripheral : not null access A0B.STM32F401.SVD.DMA.DMA_Peripheral)
    is abstract tagged limited null record;
-
-   not overriding function Get_Data_Length
-     (Self : DMA_Stream) return Interfaces.Unsigned_16 is abstract;
 
    not overriding procedure Clear_Status (Self : in out DMA_Stream) is abstract;
 

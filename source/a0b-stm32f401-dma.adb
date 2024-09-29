@@ -318,6 +318,19 @@ package body A0B.STM32F401.DMA is
       end case;
    end Registers;
 
+   ---------------------
+   -- Remaining_Items --
+   ---------------------
+
+   function Remaining_Items
+     (Self : DMA_Stream'Class) return Interfaces.Unsigned_16
+   is
+      Registers : constant not null Stream_Registers_Access := Self.Registers;
+
+   begin
+      return Registers.NDTR.NDT;
+   end Remaining_Items;
+
    -----------------------
    -- Set_Memory_Buffer --
    -----------------------
@@ -333,11 +346,5 @@ package body A0B.STM32F401.DMA is
       Registers.M0AR     := Memory;
       Registers.NDTR.NDT := Count;
    end Set_Memory_Buffer;
-
-   --  procedure Enable (Self : DMA_Stream'Class);
-   --  --  Enables stream
-   --
-   --  procedure Disable (Self : DMA_Stream'Class);
-   --  --  Disables stream
 
 end A0B.STM32F401.DMA;

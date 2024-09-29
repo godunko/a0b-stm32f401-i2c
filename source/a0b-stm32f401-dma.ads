@@ -61,6 +61,9 @@ is
    procedure Enable_Transfer_Complete_Interrupt
      (Self : in out DMA_Stream'Class);
 
+   function Remaining_Items
+     (Self : DMA_Stream'Class) return Interfaces.Unsigned_16;
+
    --  function Is_Transfer_Completed (Self : DMA_Stream'Class) return Boolean;
 
    function Get_Masked_And_Clear_Transfer_Completed

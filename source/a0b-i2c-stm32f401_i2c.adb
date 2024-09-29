@@ -7,6 +7,7 @@
 --  pragma Restrictions (No_Elaboration_Code);
 pragma Ada_2022;
 
+with Interfaces;
 with System.Address_To_Access_Conversions;
 pragma Warnings (Off, """System.Atomic_Primitives"" is an internal GNAT unit");
 with System.Atomic_Primitives;
@@ -35,15 +36,9 @@ package body A0B.I2C.STM32F401_I2C is
 
       type DMA_Stream0 is new DMA_Stream with null record;
 
-      overriding function Get_Data_Length
-        (Self : DMA_Stream0) return Interfaces.Unsigned_16;
-
       overriding procedure Clear_Status (Self : in out DMA_Stream0);
 
       type DMA_Stream6 is new DMA_Stream with null record;
-
-      overriding function Get_Data_Length
-        (Self : DMA_Stream6) return Interfaces.Unsigned_16;
 
       overriding procedure Clear_Status (Self : in out DMA_Stream6);
 
@@ -89,26 +84,6 @@ package body A0B.I2C.STM32F401_I2C is
          Self.Peripheral.HIFCR := Aux;
       end Clear_Status;
 
-      ---------------------
-      -- Get_Data_Length --
-      ---------------------
-
-      overriding function Get_Data_Length
-        (Self : DMA_Stream0) return Interfaces.Unsigned_16 is
-      begin
-         return Self.Peripheral.S0NDTR.NDT;
-      end Get_Data_Length;
-
-      ---------------------
-      -- Get_Data_Length --
-      ---------------------
-
-      overriding function Get_Data_Length
-        (Self : DMA_Stream6) return Interfaces.Unsigned_16 is
-      begin
-         return Self.Peripheral.S6NDTR.NDT;
-      end Get_Data_Length;
-
    end DMA_Streams;
 
    S0 : aliased DMA_Streams.DMA_Stream0
@@ -125,7 +100,7 @@ package body A0B.I2C.STM32F401_I2C is
       Successful : Boolean)
    is
       Remaining_Data_Length : constant Interfaces.Unsigned_32 :=
-        Interfaces.Unsigned_32 (Self.C_Stream.Get_Data_Length);
+        Interfaces.Unsigned_32 (Self.Stream.Remaining_Items);
       Force_Stop            : Boolean := False;
 
    begin
