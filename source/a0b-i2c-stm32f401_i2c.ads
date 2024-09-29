@@ -10,9 +10,9 @@
 pragma Restrictions (No_Elaboration_Code);
 
 with A0B.ARMv7M;
-with A0B.STM32F401.SVD.I2C;
-
 with A0B.STM32F401.DMA;
+with A0B.STM32F401.GPIO;
+with A0B.STM32F401.SVD.I2C;
 
 package A0B.I2C.STM32F401_I2C
   with Preelaborate
@@ -25,7 +25,11 @@ is
       Transmit_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
       Transmit_Channel : A0B.STM32F401.DMA.Channel_Number;
       Receive_Stream   : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
-      Receive_Channel  : A0B.STM32F401.DMA.Channel_Number) is
+      Receive_Channel  : A0B.STM32F401.DMA.Channel_Number;
+      SCL_Pin          : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
+      SCL_Line         : A0B.STM32F401.Function_Line;
+      SDA_Pin          : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
+      SDA_Line         : A0B.STM32F401.Function_Line) is
         limited new I2C_Bus_Master with private
           with Preelaborable_Initialization;
 
@@ -69,7 +73,11 @@ private
       Transmit_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
       Transmit_Channel : A0B.STM32F401.DMA.Channel_Number;
       Receive_Stream   : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
-      Receive_Channel  : A0B.STM32F401.DMA.Channel_Number) is
+      Receive_Channel  : A0B.STM32F401.DMA.Channel_Number;
+      SCL_Pin          : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
+      SCL_Line         : A0B.STM32F401.Function_Line;
+      SDA_Pin          : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
+      SDA_Line         : A0B.STM32F401.Function_Line) is
    limited new I2C_Bus_Master with record
       Device_Lock : Device_Locks.Lock;
       Device      : Device_Address;

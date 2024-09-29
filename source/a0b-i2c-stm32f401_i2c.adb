@@ -164,6 +164,17 @@ package body A0B.I2C.STM32F401_I2C is
 
    procedure Configure (Self : in out Master_Controller'Class) is
    begin
+      Self.SCL_Pin.Configure_Alternative_Function
+        (Line  => Self.SCL_Line,
+         Mode  => A0B.STM32F401.GPIO.Open_Drain,
+         Speed => A0B.STM32F401.GPIO.Very_High,
+         Pull  => A0B.STM32F401.GPIO.No);
+      Self.SDA_Pin.Configure_Alternative_Function
+        (Line  => Self.SDA_Line,
+         Mode  => A0B.STM32F401.GPIO.Open_Drain,
+         Speed => A0B.STM32F401.GPIO.Very_High,
+         Pull  => A0B.STM32F401.GPIO.No);
+
       --  Disable IC2 to be able to configure it
 
       Self.Peripheral.CR1.PE := False;

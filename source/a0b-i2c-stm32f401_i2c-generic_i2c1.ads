@@ -9,6 +9,8 @@ pragma Restrictions (No_Elaboration_Code);
 generic
    Transmit_Stream : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
    Receive_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
+   SCL_Pin         : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
+   SDA_Pin         : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
 
 package A0B.I2C.STM32F401_I2C.Generic_I2C1
   with Preelaborate
@@ -23,6 +25,10 @@ is
      Transmit_Stream  => Transmit_Stream,
      Transmit_Channel => 1,
      Receive_Stream   => Receive_Stream,
-     Receive_Channel  => 1);
+     Receive_Channel  => 1,
+     SCL_Pin          => SCL_Pin,
+     SCL_Line         => A0B.STM32F401.I2C1_SCL,
+     SDA_Pin          => SDA_Pin,
+     SDA_Line         => A0B.STM32F401.I2C1_SDA);
 
 end A0B.I2C.STM32F401_I2C.Generic_I2C1;
