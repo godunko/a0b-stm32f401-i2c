@@ -148,6 +148,28 @@ package body A0B.STM32F401.DMA is
       A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (Self.Interrupt);
    end Configure_Peripheral_To_Memory;
 
+   -------------
+   -- Disable --
+   -------------
+
+   procedure Disable (Self : in out DMA_Stream'Class) is
+      Registers : constant not null Stream_Registers_Access := Self.Registers;
+
+   begin
+      Registers.CR.EN := False;
+   end Disable;
+
+   ------------
+   -- Enable --
+   ------------
+
+   procedure Enable (Self : in out DMA_Stream'Class) is
+      Registers : constant not null Stream_Registers_Access := Self.Registers;
+
+   begin
+      Registers.CR.EN := True;
+   end Enable;
+
    ------------------
    -- Enable_Clock --
    ------------------

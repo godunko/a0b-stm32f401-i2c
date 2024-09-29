@@ -40,16 +40,12 @@ package body A0B.I2C.STM32F401_I2C is
 
       overriding procedure Clear_Status (Self : in out DMA_Stream0);
 
-      overriding procedure Enable (Self : in out DMA_Stream0);
-
       type DMA_Stream6 is new DMA_Stream with null record;
 
       overriding function Get_Data_Length
         (Self : DMA_Stream6) return Interfaces.Unsigned_16;
 
       overriding procedure Clear_Status (Self : in out DMA_Stream6);
-
-      overriding procedure Enable (Self : in out DMA_Stream6);
 
    end DMA_Streams;
 
@@ -92,24 +88,6 @@ package body A0B.I2C.STM32F401_I2C is
 
          Self.Peripheral.HIFCR := Aux;
       end Clear_Status;
-
-      ------------
-      -- Enable --
-      ------------
-
-      overriding procedure Enable (Self : in out DMA_Stream0) is
-      begin
-         Self.Peripheral.S0CR.EN := True;
-      end Enable;
-
-      ------------
-      -- Enable --
-      ------------
-
-      overriding procedure Enable (Self : in out DMA_Stream6) is
-      begin
-         Self.Peripheral.S6CR.EN := True;
-      end Enable;
 
       ---------------------
       -- Get_Data_Length --
@@ -602,7 +580,7 @@ package body A0B.I2C.STM32F401_I2C is
          DMA1_Periph.LIFCR.CTCIF0 := True;
          --  Clear TC and HT status flags
 
-         DMA1_Periph.S0CR.EN := False;
+         Self.Receive_Stream.Disable;
          --  Disable DMA stream
 
          Self.Complte_Transfer (Successful => True);
@@ -630,7 +608,7 @@ package body A0B.I2C.STM32F401_I2C is
          DMA1_Periph.HIFCR.CTCIF6 := True;
          --  Clear TC and HT status flags
 
-         DMA1_Periph.S6CR.EN := False;
+         Self.Transmit_Stream.Disable;
          --  Disable DMA stream
 
          Self.Complte_Transfer (Successful => True);
@@ -711,7 +689,7 @@ package body A0B.I2C.STM32F401_I2C is
       Self.C_Stream.Clear_Status;
       --  Reset state of the DMA stream
 
-      Self.C_Stream.Enable;
+      Self.Stream.Enable;
       --  Enable DMA stream
    end Setup_Data_Transfer;
 

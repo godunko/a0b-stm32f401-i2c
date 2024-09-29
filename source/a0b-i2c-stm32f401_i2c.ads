@@ -75,8 +75,6 @@ private
 
    not overriding procedure Clear_Status (Self : in out DMA_Stream) is abstract;
 
-   not overriding procedure Enable (Self : in out DMA_Stream) is abstract;
-
    type Operation_Kind is (Read, Write);
 
    type Master_Controller

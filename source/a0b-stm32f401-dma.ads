@@ -52,10 +52,10 @@ is
       Count  : Interfaces.Unsigned_16);
    --  Sets address of the memory buffer and number of items to be transferred.
 
-   --  procedure Enable (Self : in out DMA_Stream'Class);
-   --  --  Enables stream
-   --
-   --  procedure Disable (Self : in out DMA_Stream'Class);
+   procedure Enable (Self : in out DMA_Stream'Class);
+   --  Enables stream
+
+   procedure Disable (Self : in out DMA_Stream'Class);
    --  Disables stream
 
    procedure Enable_Transfer_Complete_Interrupt
