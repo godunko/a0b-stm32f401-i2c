@@ -10,7 +10,7 @@ generic
    Transmit_Stream : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
    Receive_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
 
-package A0B.I2C.STM32F401_I2C.I2C1
+package A0B.I2C.STM32F401_I2C.Generic_I2C1
   with Preelaborate
 is
 
@@ -25,4 +25,4 @@ is
      Receive_Stream   => Receive_Stream,
      Receive_Channel  => 1);
 
-end A0B.I2C.STM32F401_I2C.I2C1;
+end A0B.I2C.STM32F401_I2C.Generic_I2C1;

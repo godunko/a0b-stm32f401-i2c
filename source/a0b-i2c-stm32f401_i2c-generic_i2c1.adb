@@ -6,7 +6,7 @@
 
 pragma Restrictions (No_Elaboration_Code);
 
-package body A0B.I2C.STM32F401_I2C.I2C1 is
+package body A0B.I2C.STM32F401_I2C.Generic_I2C1 is
 
    pragma Warnings
      (Off, "ll instances of ""*"" will have the same external name");
@@ -36,4 +36,4 @@ package body A0B.I2C.STM32F401_I2C.I2C1 is
       I2C1.On_Event_Interrupt;
    end I2C1_EV_Handler;
 
-end A0B.I2C.STM32F401_I2C.I2C1;
+end A0B.I2C.STM32F401_I2C.Generic_I2C1;
