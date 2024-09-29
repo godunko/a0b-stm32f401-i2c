@@ -40,6 +40,55 @@ package body A0B.STM32F401.DMA is
    function Registers
      (Self : DMA_Stream'Class) return not null Stream_Registers_Access;
 
+   ----------------------------
+   -- Clear_Interrupt_Status --
+   ----------------------------
+
+   procedure Clear_Interrupt_Status (Self : in out DMA_Stream'Class) is
+   begin
+      case Self.Stream is
+         when 0 =>
+            Self.Controller.Peripheral.LIFCR :=
+              (CFEIF0 | CDMEIF0 | CTEIF0 | CHTIF0 | CTCIF0 => True,
+               others                                      => <>);
+
+         when 1 =>
+            Self.Controller.Peripheral.LIFCR :=
+              (CFEIF1 | CDMEIF1 | CTEIF1 | CHTIF1 | CTCIF1 => True,
+               others                                      => <>);
+
+         when 2 =>
+            Self.Controller.Peripheral.LIFCR :=
+              (CFEIF2 | CDMEIF2 | CTEIF2 | CHTIF2 | CTCIF2 => True,
+               others                                      => <>);
+
+         when 3 =>
+            Self.Controller.Peripheral.LIFCR :=
+              (CFEIF3 | CDMEIF3 | CTEIF3 | CHTIF3 | CTCIF3 => True,
+               others                                      => <>);
+
+         when 4 =>
+            Self.Controller.Peripheral.HIFCR :=
+              (CFEIF4 | CDMEIF4 | CTEIF4 | CHTIF4 | CTCIF4 => True,
+               others                                      => <>);
+
+         when 5 =>
+            Self.Controller.Peripheral.HIFCR :=
+              (CFEIF5 | CDMEIF5 | CTEIF5 | CHTIF5 | CTCIF5 => True,
+               others                                      => <>);
+
+         when 6 =>
+            Self.Controller.Peripheral.HIFCR :=
+              (CFEIF6 | CDMEIF6 | CTEIF6 | CHTIF6 | CTCIF6 => True,
+               others                                      => <>);
+
+         when 7 =>
+            Self.Controller.Peripheral.HIFCR :=
+              (CFEIF7 | CDMEIF7 | CTEIF7 | CHTIF7 | CTCIF7 => True,
+               others                                      => <>);
+      end case;
+   end Clear_Interrupt_Status;
+
    ------------------------------------
    -- Configure_Memory_To_Peripheral --
    ------------------------------------

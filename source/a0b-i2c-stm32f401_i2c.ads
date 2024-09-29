@@ -7,13 +7,12 @@
 --  Implementation of the I2C bus master for the STM32F401 controller.
 --  It use DMA for data transfer.
 
---  pragma Restrictions (No_Elaboration_Code);
+pragma Restrictions (No_Elaboration_Code);
 
 with A0B.ARMv7M;
 with A0B.STM32F401.SVD.I2C;
 
 with A0B.STM32F401.DMA;
-private with A0B.STM32F401.SVD.DMA;
 
 package A0B.I2C.STM32F401_I2C
   with Preelaborate
@@ -64,12 +63,6 @@ private
 
    end Device_Locks;
 
-   type DMA_Stream
-     (Peripheral : not null access A0B.STM32F401.SVD.DMA.DMA_Peripheral)
-   is abstract tagged limited null record;
-
-   not overriding procedure Clear_Status (Self : in out DMA_Stream) is abstract;
-
    type Operation_Kind is (Read, Write);
 
    type Master_Controller
@@ -84,17 +77,13 @@ private
       Operation   : Operation_Kind;
       Buffers     : access Buffer_Descriptor_Array;
       Active      : A0B.Types.Unsigned_32;
-      C_Stream    : access DMA_Stream'Class;
       Stream      : access A0B.STM32F401.DMA.DMA_Stream'Class;
       Stop        : Boolean;
       --  Send of STOP condition is requested after completion of the current
       --  operation. This flag is used to reject erroneous Read/Write request
       --  after completion of the transfer and before release of the bus.
 
-      C_Transmit_Stream : access DMA_Stream'Class;
-      C_Receive_Stream  : access DMA_Stream'Class;
-
-      BTF_Enabled     : Boolean;
+      BTF_Enabled : Boolean;
       --  This flag is used to "mask" BTF flag when write operation is
       --  completed, but transaction is not closed. In particular, it "masks"
       --  event interrupt till START condition of the next operation is

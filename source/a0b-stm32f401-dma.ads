@@ -72,6 +72,9 @@ is
    --  xISR.TC and SxCR.TCIE are set to 1); and clear interrupt status
    --  unconditionally.
 
+   procedure Clear_Interrupt_Status (Self : in out DMA_Stream'Class);
+   --  Clears all interrupt status bits.
+
 private
 
    type DMA_Controller

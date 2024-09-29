@@ -4,7 +4,7 @@
 --  SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 --
 
---  pragma Restrictions (No_Elaboration_Code);
+pragma Restrictions (No_Elaboration_Code);
 pragma Ada_2022;
 
 with Interfaces;
@@ -31,65 +31,6 @@ package body A0B.I2C.STM32F401_I2C is
    --  When Success is False it means Acknowledge Failure, current operation
    --  is marked as incomplete, but successful, while following operations
    --  are marked as failed.
-
-   package DMA_Streams is
-
-      type DMA_Stream0 is new DMA_Stream with null record;
-
-      overriding procedure Clear_Status (Self : in out DMA_Stream0);
-
-      type DMA_Stream6 is new DMA_Stream with null record;
-
-      overriding procedure Clear_Status (Self : in out DMA_Stream6);
-
-   end DMA_Streams;
-
-   -----------------
-   -- DMA_Streams --
-   -----------------
-
-   package body DMA_Streams is
-
-      ------------------
-      -- Clear_Status --
-      ------------------
-
-      overriding procedure Clear_Status (Self : in out DMA_Stream0) is
-         Aux : LIFCR_Register := Self.Peripheral.LIFCR;
-
-      begin
-         Aux.CFEIF0  := True;
-         Aux.CDMEIF0 := True;
-         Aux.CTEIF0  := True;
-         Aux.CHTIF0  := True;
-         Aux.CTCIF0  := True;
-
-         Self.Peripheral.LIFCR := Aux;
-      end Clear_Status;
-
-      ------------------
-      -- Clear_Status --
-      ------------------
-
-      overriding procedure Clear_Status (Self : in out DMA_Stream6) is
-         Aux : HIFCR_Register := Self.Peripheral.HIFCR;
-
-      begin
-         Aux.CFEIF6  := True;
-         Aux.CDMEIF6 := True;
-         Aux.CTEIF6  := True;
-         Aux.CHTIF6  := True;
-         Aux.CTCIF6  := True;
-
-         Self.Peripheral.HIFCR := Aux;
-      end Clear_Status;
-
-   end DMA_Streams;
-
-   S0 : aliased DMA_Streams.DMA_Stream0
-                  (A0B.STM32F401.SVD.DMA.DMA1_Periph'Access);
-   S6 : aliased DMA_Streams.DMA_Stream6
-                  (A0B.STM32F401.SVD.DMA.DMA1_Periph'Access);
 
    ----------------------
    -- Complte_Transfer --
@@ -323,16 +264,12 @@ package body A0B.I2C.STM32F401_I2C is
          Peripheral => Self.Peripheral.DR'Address);
       Self.Transmit_Stream.Enable_Transfer_Complete_Interrupt;
 
-      Self.C_Transmit_Stream := S6'Access;
-
       --  Configure DMA stream (DMA 1 Stream 0 Channel 1)
 
       Self.Receive_Stream.Configure_Peripheral_To_Memory
         (Channel    => 1,
          Peripheral => Self.Peripheral.DR'Address);
       Self.Receive_Stream.Enable_Transfer_Complete_Interrupt;
-
-      Self.C_Receive_Stream := S0'Access;
    end Configure;
 
    ------------------
@@ -607,7 +544,6 @@ package body A0B.I2C.STM32F401_I2C is
 
       Self.Device    := Device.Target_Address;
       Self.Operation := Read;
-      Self.C_Stream  := Self.C_Receive_Stream;
       Self.Stream    := Self.Receive_Stream.all'Unchecked_Access;
       Self.Buffers   := Buffers'Unrestricted_Access;
       Self.Active    := 0;
@@ -645,7 +581,7 @@ package body A0B.I2C.STM32F401_I2C is
           or Self.Buffers (Self.Active).Size > 1;
       Self.Peripheral.CR2.LAST := Self.Active = Self.Buffers'Last;
 
-      Self.C_Stream.Clear_Status;
+      Self.Stream.Clear_Interrupt_Status;
       --  Reset state of the DMA stream
 
       Self.Stream.Enable;
@@ -754,7 +690,6 @@ package body A0B.I2C.STM32F401_I2C is
 
       Self.Device    := Device.Target_Address;
       Self.Operation := Write;
-      Self.C_Stream  := Self.C_Transmit_Stream;
       Self.Stream    := Self.Transmit_Stream.all'Unchecked_Access;
       Self.Buffers   := Buffers'Unrestricted_Access;
       Self.Active    := 0;
