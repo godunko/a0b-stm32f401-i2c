@@ -70,14 +70,6 @@ private
      (Peripheral : not null access A0B.STM32F401.SVD.DMA.DMA_Peripheral)
    is abstract tagged limited null record;
 
-   not overriding procedure Set_Memory_Address
-     (Self    : in out DMA_Stream;
-      Address : System.Address) is abstract;
-
-   not overriding procedure Set_Data_Length
-     (Self   : in out DMA_Stream;
-      Length : Interfaces.Unsigned_16) is abstract;
-
    not overriding function Get_Data_Length
      (Self : DMA_Stream) return Interfaces.Unsigned_16 is abstract;
 

@@ -9,7 +9,6 @@
 pragma Restrictions (No_Elaboration_Code);
 pragma Ada_2022;
 
---  with Interfaces;
 with System.Address_To_Access_Conversions;
 
 with A0B.ARMv7M.NVIC_Utilities;
@@ -228,11 +227,22 @@ package body A0B.STM32F401.DMA is
       end case;
    end Registers;
 
-   --  procedure Set_Memory
-   --    (Self   : in out DMA_Stream'Class;
-   --     Memory : System.Address;
-   --     Size   : Interfaces.Unsigned_16);
-   --
+   -----------------------
+   -- Set_Memory_Buffer --
+   -----------------------
+
+   procedure Set_Memory_Buffer
+     (Self   : in out DMA_Stream'Class;
+      Memory : System.Address;
+      Count  : Interfaces.Unsigned_16)
+   is
+      Registers : constant not null Stream_Registers_Access := Self.Registers;
+
+   begin
+      Registers.M0AR     := Memory;
+      Registers.NDTR.NDT := Count;
+   end Set_Memory_Buffer;
+
    --  procedure Enable (Self : DMA_Stream'Class);
    --  --  Enables stream
    --

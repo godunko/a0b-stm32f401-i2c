@@ -35,14 +35,6 @@ package body A0B.I2C.STM32F401_I2C is
 
       type DMA_Stream0 is new DMA_Stream with null record;
 
-      overriding procedure Set_Memory_Address
-        (Self    : in out DMA_Stream0;
-         Address : System.Address);
-
-      overriding procedure Set_Data_Length
-        (Self   : in out DMA_Stream0;
-         Length : Interfaces.Unsigned_16);
-
       overriding function Get_Data_Length
         (Self : DMA_Stream0) return Interfaces.Unsigned_16;
 
@@ -51,14 +43,6 @@ package body A0B.I2C.STM32F401_I2C is
       overriding procedure Enable (Self : in out DMA_Stream0);
 
       type DMA_Stream6 is new DMA_Stream with null record;
-
-      overriding procedure Set_Memory_Address
-        (Self    : in out DMA_Stream6;
-         Address : System.Address);
-
-      overriding procedure Set_Data_Length
-        (Self   : in out DMA_Stream6;
-         Length : Interfaces.Unsigned_16);
 
       overriding function Get_Data_Length
         (Self : DMA_Stream6) return Interfaces.Unsigned_16;
@@ -146,54 +130,6 @@ package body A0B.I2C.STM32F401_I2C is
       begin
          return Self.Peripheral.S6NDTR.NDT;
       end Get_Data_Length;
-
-      ---------------------
-      -- Set_Data_Length --
-      ---------------------
-
-      overriding procedure Set_Data_Length
-        (Self   : in out DMA_Stream0;
-         Length : Interfaces.Unsigned_16) is
-      begin
-         Self.Peripheral.S0NDTR.NDT := Length;
-      end Set_Data_Length;
-
-      ---------------------
-      -- Set_Data_Length --
-      ---------------------
-
-      overriding procedure Set_Data_Length
-        (Self   : in out DMA_Stream6;
-         Length : Interfaces.Unsigned_16) is
-      begin
-         Self.Peripheral.S6NDTR.NDT := Length;
-      end Set_Data_Length;
-
-      ------------------------
-      -- Set_Memory_Address --
-      ------------------------
-
-      overriding procedure Set_Memory_Address
-        (Self    : in out DMA_Stream0;
-         Address : System.Address) is
-      begin
-         Self.Peripheral.S0M0AR :=
-           Interfaces.Unsigned_32
-             (System.Storage_Elements.To_Integer (Address));
-      end Set_Memory_Address;
-
-      ------------------------
-      -- Set_Memory_Address --
-      ------------------------
-
-      overriding procedure Set_Memory_Address
-        (Self    : in out DMA_Stream6;
-         Address : System.Address) is
-      begin
-         Self.Peripheral.S6M0AR :=
-           Interfaces.Unsigned_32
-             (System.Storage_Elements.To_Integer (Address));
-      end Set_Memory_Address;
 
    end DMA_Streams;
 
@@ -754,9 +690,9 @@ package body A0B.I2C.STM32F401_I2C is
    begin
       --  Configure DMA transfer
 
-      Self.C_Stream.Set_Memory_Address (Self.Buffers (Self.Active).Address);
-      Self.C_Stream.Set_Data_Length
-        (Interfaces.Unsigned_16 (Self.Buffers (Self.Active).Size));
+      Self.Stream.Set_Memory_Buffer
+        (Self.Buffers (Self.Active).Address,
+         Interfaces.Unsigned_16 (Self.Buffers (Self.Active).Size));
 
       --  For read operation I2C controller need to be configured to
       --  generate acknowledge:

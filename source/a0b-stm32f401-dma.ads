@@ -8,7 +8,7 @@
 
 pragma Restrictions (No_Elaboration_Code);
 
---  with Interfaces;
+with Interfaces;
 with System;
 
 with A0B.STM32F401.SVD.DMA;
@@ -46,10 +46,11 @@ is
       Channel    : Channel_Number;
       Peripheral : System.Address);
 
-   --  procedure Set_Transfer
-   --    (Self   : in out DMA_Stream'Class;
-   --     Memory : System.Address;
-   --     Size   : Interfaces.Unsigned_16);
+   procedure Set_Memory_Buffer
+     (Self   : in out DMA_Stream'Class;
+      Memory : System.Address;
+      Count  : Interfaces.Unsigned_16);
+   --  Sets address of the memory buffer and number of items to be transferred.
 
    --  procedure Enable (Self : in out DMA_Stream'Class);
    --  --  Enables stream
