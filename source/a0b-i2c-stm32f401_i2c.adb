@@ -15,7 +15,7 @@ with System.Storage_Elements;
 
 with A0B.ARMv7M.NVIC_Utilities;
 with A0B.Callbacks.Generic_Non_Dispatching;
-with A0B.STM32F401.SVD.DMA; use A0B.STM32F401.SVD.DMA;
+with A0B.STM32F401.SVD.RCC;
 
 package body A0B.I2C.STM32F401_I2C is
 
@@ -174,6 +174,19 @@ package body A0B.I2C.STM32F401_I2C is
          Mode  => A0B.STM32F401.GPIO.Open_Drain,
          Speed => A0B.STM32F401.GPIO.Very_High,
          Pull  => A0B.STM32F401.GPIO.No);
+
+      --  Enable peripheral's clock
+
+      case Self.Controller is
+         when 1 =>
+            A0B.STM32F401.SVD.RCC.RCC_Periph.APB1ENR.I2C1EN := True;
+
+         when 2 =>
+            A0B.STM32F401.SVD.RCC.RCC_Periph.APB1ENR.I2C2EN := True;
+
+         when 3 =>
+            A0B.STM32F401.SVD.RCC.RCC_Periph.APB1ENR.I2C3EN := True;
+      end case;
 
       --  Disable IC2 to be able to configure it
 

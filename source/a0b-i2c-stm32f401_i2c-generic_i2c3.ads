@@ -22,16 +22,17 @@ is
    pragma Elaborate_Body;
 
    I2C3 : aliased A0B.I2C.STM32F401_I2C.Master_Controller
-    (Peripheral       => A0B.STM32F401.SVD.I2C.I2C3_Periph'Access,
-     Event_Interrupt  => A0B.STM32F401.I2C3_EV,
-     Error_Interrupt  => A0B.STM32F401.I2C3_ER,
-     Transmit_Stream  => Transmit_Stream,
-     Transmit_Channel => Transmit_Channel,
-     Receive_Stream   => Receive_Stream,
-     Receive_Channel  => Receive_Channel,
-     SCL_Pin          => A0B.STM32F401.GPIO.PIOA.PA8'Access,
-     SCL_Line         => A0B.STM32F401.I2C3_SCL,
-     SDA_Pin          => SDA_Pin,
-     SDA_Line         => A0B.STM32F401.I2C3_SDA);
+     (Peripheral       => A0B.STM32F401.SVD.I2C.I2C3_Periph'Access,
+      Controller       => 3,
+      Event_Interrupt  => A0B.STM32F401.I2C3_EV,
+      Error_Interrupt  => A0B.STM32F401.I2C3_ER,
+      Transmit_Stream  => Transmit_Stream,
+      Transmit_Channel => Transmit_Channel,
+      Receive_Stream   => Receive_Stream,
+      Receive_Channel  => Receive_Channel,
+      SCL_Pin          => A0B.STM32F401.GPIO.PIOA.PA8'Access,
+      SCL_Line         => A0B.STM32F401.I2C3_SCL,
+      SDA_Pin          => SDA_Pin,
+      SDA_Line         => A0B.STM32F401.I2C3_SDA);
 
 end A0B.I2C.STM32F401_I2C.Generic_I2C3;

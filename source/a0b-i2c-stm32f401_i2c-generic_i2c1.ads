@@ -19,16 +19,17 @@ is
    pragma Elaborate_Body;
 
    I2C1 : aliased A0B.I2C.STM32F401_I2C.Master_Controller
-    (Peripheral       => A0B.STM32F401.SVD.I2C.I2C1_Periph'Access,
-     Event_Interrupt  => A0B.STM32F401.I2C1_EV,
-     Error_Interrupt  => A0B.STM32F401.I2C1_ER,
-     Transmit_Stream  => Transmit_Stream,
-     Transmit_Channel => 1,
-     Receive_Stream   => Receive_Stream,
-     Receive_Channel  => 1,
-     SCL_Pin          => SCL_Pin,
-     SCL_Line         => A0B.STM32F401.I2C1_SCL,
-     SDA_Pin          => SDA_Pin,
-     SDA_Line         => A0B.STM32F401.I2C1_SDA);
+     (Peripheral       => A0B.STM32F401.SVD.I2C.I2C1_Periph'Access,
+      Controller       => 1,
+      Event_Interrupt  => A0B.STM32F401.I2C1_EV,
+      Error_Interrupt  => A0B.STM32F401.I2C1_ER,
+      Transmit_Stream  => Transmit_Stream,
+      Transmit_Channel => 1,
+      Receive_Stream   => Receive_Stream,
+      Receive_Channel  => 1,
+      SCL_Pin          => SCL_Pin,
+      SCL_Line         => A0B.STM32F401.I2C1_SCL,
+      SDA_Pin          => SDA_Pin,
+      SDA_Line         => A0B.STM32F401.I2C1_SDA);
 
 end A0B.I2C.STM32F401_I2C.Generic_I2C1;

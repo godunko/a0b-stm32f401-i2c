@@ -18,8 +18,11 @@ package A0B.I2C.STM32F401_I2C
   with Preelaborate
 is
 
+   type Controller_Number is range 1 .. 3;
+
    type Master_Controller
      (Peripheral       : not null access A0B.STM32F401.SVD.I2C.I2C_Peripheral;
+      Controller       : Controller_Number;
       Event_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
       Error_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
       Transmit_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
@@ -68,6 +71,7 @@ private
 
    type Master_Controller
      (Peripheral       : not null access A0B.STM32F401.SVD.I2C.I2C_Peripheral;
+      Controller       : Controller_Number;
       Event_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
       Error_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
       Transmit_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
