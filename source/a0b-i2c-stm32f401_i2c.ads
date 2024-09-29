@@ -19,20 +19,17 @@ package A0B.I2C.STM32F401_I2C
 is
 
    type Master_Controller
-     (Peripheral      : not null access A0B.STM32F401.SVD.I2C.I2C_Peripheral;
-      Event_Interrupt : A0B.ARMv7M.External_Interrupt_Number;
-      Error_Interrupt : A0B.ARMv7M.External_Interrupt_Number;
-      Transmit_Stream : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
-      Receive_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class) is
+     (Peripheral       : not null access A0B.STM32F401.SVD.I2C.I2C_Peripheral;
+      Event_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
+      Error_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
+      Transmit_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
+      Transmit_Channel : A0B.STM32F401.DMA.Channel_Number;
+      Receive_Stream   : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
+      Receive_Channel  : A0B.STM32F401.DMA.Channel_Number) is
         limited new I2C_Bus_Master with private
           with Preelaborable_Initialization;
 
    procedure Configure (Self : in out Master_Controller'Class);
-
-   --  subtype I2C1_Controller is Master_Controller
-   --    (Peripheral      => A0B.STM32F401.SVD.I2C.I2C1_Periph'Access,
-   --     Event_Interrupt => A0B.STM32F401.I2C1_EV,
-   --     Error_Interrupt => A0B.STM32F401.I2C1_ER);
 
 private
 
@@ -66,11 +63,13 @@ private
    type Operation_Kind is (Read, Write);
 
    type Master_Controller
-     (Peripheral      : not null access A0B.STM32F401.SVD.I2C.I2C_Peripheral;
-      Event_Interrupt : A0B.ARMv7M.External_Interrupt_Number;
-      Error_Interrupt : A0B.ARMv7M.External_Interrupt_Number;
-      Transmit_Stream : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
-      Receive_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class) is
+     (Peripheral       : not null access A0B.STM32F401.SVD.I2C.I2C_Peripheral;
+      Event_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
+      Error_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
+      Transmit_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
+      Transmit_Channel : A0B.STM32F401.DMA.Channel_Number;
+      Receive_Stream   : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
+      Receive_Channel  : A0B.STM32F401.DMA.Channel_Number) is
    limited new I2C_Bus_Master with record
       Device_Lock : Device_Locks.Lock;
       Device      : Device_Address;

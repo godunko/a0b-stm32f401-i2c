@@ -275,7 +275,7 @@ package body A0B.I2C.STM32F401_I2C is
       --  Configure DMA stream for data transmit
 
       Self.Transmit_Stream.Configure_Memory_To_Peripheral
-        (Channel    => 1,
+        (Channel    => Self.Transmit_Channel,
          Peripheral => Self.Peripheral.DR'Address);
       Self.Transmit_Stream.Enable_Transfer_Complete_Interrupt;
       Self.Transmit_Stream.Set_Interrupt_Callback
@@ -284,7 +284,7 @@ package body A0B.I2C.STM32F401_I2C is
       --  Configure DMA stream for data receive
 
       Self.Receive_Stream.Configure_Peripheral_To_Memory
-        (Channel    => 1,
+        (Channel    => Self.Receive_Channel,
          Peripheral => Self.Peripheral.DR'Address);
       Self.Receive_Stream.Enable_Transfer_Complete_Interrupt;
       Self.Receive_Stream.Set_Interrupt_Callback
