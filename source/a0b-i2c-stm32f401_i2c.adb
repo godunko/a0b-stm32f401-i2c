@@ -646,7 +646,15 @@ package body A0B.I2C.STM32F401_I2C is
          return;
       end if;
 
-      Self.Device := Device.Target_Address;
+      if Self.Peripheral.SR2.BUSY then
+         --  Bus is busy, reject Start operation.
+
+         Device_Locks.Release (Self.Device_Lock, Device, Success);
+         Success := False;
+
+      else
+         Self.Device := Device.Target_Address;
+      end if;
    end Start;
 
    ----------
