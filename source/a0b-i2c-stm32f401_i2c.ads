@@ -67,7 +67,7 @@ private
 
    end Device_Locks;
 
-   type Operation_Kind is (Read, Write);
+   type Operation_Kind is (None, Read, Write, Write_Done);
 
    type Master_Controller
      (Peripheral       : not null access A0B.STM32F401.SVD.I2C.I2C_Peripheral;
@@ -85,7 +85,7 @@ private
    limited new I2C_Bus_Master with record
       Device_Lock : Device_Locks.Lock;
       Device      : Device_Address;
-      Operation   : Operation_Kind;
+      Operation   : Operation_Kind := None;
       Buffers     : access Buffer_Descriptor_Array;
       Active      : A0B.Types.Unsigned_32;
       Stream      : access A0B.STM32F401.DMA.DMA_Stream'Class;

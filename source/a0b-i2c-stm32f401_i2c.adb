@@ -53,77 +53,75 @@ package body A0B.I2C.STM32F401_I2C is
 
    procedure Complte_Transfer
      (Self       : in out Master_Controller'Class;
-      Successful : Boolean)
-   is
-      Remaining_Data_Length : constant Interfaces.Unsigned_32 :=
-        Interfaces.Unsigned_32 (Self.Stream.Remaining_Items);
-      Force_Stop            : Boolean := False;
-
+      Successful : Boolean) is
    begin
       --  Transfer operation has been finished.
 
       Self.Buffers (Self.Active).Transferred :=
-        Self.Buffers (Self.Active).Size - Remaining_Data_Length;
+        Self.Buffers (Self.Active).Size
+          - Interfaces.Unsigned_32 (Self.Stream.Remaining_Items);
 
       if Successful then
-         Self.Buffers (Self.Active).State := Success;
+         Self.Buffers (Self.Active).State        := Success;
+         Self.Buffers (Self.Active).Acknowledged := True;
 
       else
-         if Self.Buffers (Self.Active).Size = 0
-           or Self.Buffers (Self.Active).Transferred = 0
+         Self.Buffers (Self.Active).Acknowledged := False;
+
+         if Self.Active = Self.Buffers'First
+           and Self.Buffers (Self.Active).Transferred = 0
          then
-            --  Probe operation without data transmission, or data transmission
-            --  is not started at all, process as failure.
+            --  It is case when device address was not acknowledged. It means
+            --  that operation has been failed.
 
             Self.Buffers (Self.Active).State := Failure;
 
          else
+
             Self.Buffers (Self.Active).State := Success;
          end if;
 
          for J in Self.Active + 1 .. Self.Buffers'Last loop
-            Self.Buffers (J).State := Failure;
+            Self.Buffers (J).State        := Failure;
+            Self.Buffers (J).Acknowledged := False;
          end loop;
-
-         Self.Stop  := True;
-         Force_Stop := True;
       end if;
 
       if Self.Active /= Self.Buffers'Last
-        and not Force_Stop
+        and Successful
       then
          --  Setup data transfer for the next buffer.
 
          Self.Active := @ + 1;
          Self.Setup_Data_Transfer;
 
-      elsif Self.Operation = Write and not Force_Stop then
-         --  Write operation is almost done, wait till transmission of the last
-         --  byte is done and handle completion of the operation in the even
-         --  handler.
+      elsif Self.Operation = Write and Successful then
+         --  Write operation has been completed successfully. BTE status bit
+         --  will be set when transfer from the data register done. It is
+         --  handled in the event interrupt handler.
 
-         null;
+         Self.Operation := Write_Done;
 
       else
-         --  Read operation is done.
+         --  Operation is done.
 
          declare
             Stop : constant Boolean := Self.Stop;
             --  Catch value, it can be changed by callback
 
          begin
+            if Successful and Self.Operation = Write then
+               --  Wait till last byte move into shift register, overwise
+               --  set of STOP drop this byte.
+               --
+               --  XXX Can it handled in the event handler?
+
+               while not Self.Peripheral.SR1.TxE loop
+                  null;
+               end loop;
+            end if;
+
             if Stop then
-               if Successful and Self.Operation = Write then
-                  --  Wait till last byte move into shift register, overwise
-                  --  set of STOP drop this byte.
-                  --
-                  --  XXX Can it handled in the event handler?
-
-                  while not Self.Peripheral.SR1.TxE loop
-                     null;
-                  end loop;
-               end if;
-
                Self.Peripheral.CR1.STOP := True;
                --  Send STOP condition when requested. There is no interrupt to
                --  handle unset of BUSY by hardware, so attempt to overlap send
@@ -141,7 +139,8 @@ package body A0B.I2C.STM32F401_I2C is
                   null;
                end loop;
 
-               Self.Stop := False;
+               Self.Stop      := False;
+               Self.Operation := None;
 
                declare
                   Device  : constant I2C_Device_Driver_Access :=
@@ -444,8 +443,9 @@ package body A0B.I2C.STM32F401_I2C is
               (Interfaces.Shift_Left
                  (Interfaces.Unsigned_8 (Self.Device and 16#7F#), 1)
                or (case Self.Operation is
-                     when Read      => 1,
-                     when Write     => 0));
+                     when Read   => 1,
+                     when Write  => 0,
+                     when others => raise Program_Error));
 
          else
             raise Program_Error;
@@ -493,7 +493,8 @@ package body A0B.I2C.STM32F401_I2C is
                   null;
                end loop;
 
-               Self.Stop := False;
+               Self.Stop      := False;
+               Self.Operation := None;
 
                declare
                   Device  : constant I2C_Device_Driver_Access :=
@@ -581,8 +582,9 @@ package body A0B.I2C.STM32F401_I2C is
       end if;
 
       for Buffer of Buffers loop
-         Buffer.Transferred := 0;
-         Buffer.State       := Active;
+         Buffer.Transferred  := 0;
+         Buffer.State        := Active;
+         Buffer.Acknowledged := False;
       end loop;
 
       Self.Device    := Device.Target_Address;
@@ -666,49 +668,37 @@ package body A0B.I2C.STM32F401_I2C is
       Device  : not null I2C_Device_Driver_Access;
       Success : in out Boolean) is
    begin
-      raise Program_Error;
---        --
---        --  A0B.ARMv7M.NVIC_Utilities.Disable_Interrupt (Self.Event_Interrupt);
---        --  --  Disable event interrup from the peripheral controller to prevent
---        --  --  undesired TC interrupt (it will be cleared by send of the START
---        --  --  condition).
---        --
---        --  Self.Peripheral.CR1.TCIE := True;
---        --  --  Enable TC and TCE interrupts.
---        --
---        --  --  Send STOP condition.
---        --
---        --  Self.Peripheral.CR2.STOP := True;
---        --
---        --  --  declare
---        --  --     Val : A0B.SVD.STM32H723.I2C.CR2_Register := Self.Peripheral.CR2;
---        --  --
---        --  --  begin
---        --  --     Val.RD_WRN  := True;           --  Master requests a read transfer.
---        --  --     Val.NBYTES  := Buffer'Length;  --  Number of bytes to be transfered.
---        --  --
---        --  --     Val.AUTOEND := False;
---        --  --     Val.RELOAD  := False;
---        --  --     Val.START   := True;
---        --  --     --  Val.RELOAD  := True;
---        --  --     --  Val.START   := Self.State /= Read;
---        --  --     --  if Self.State /= Read then
---        --  --
---        --  --     --
---        --  --     --     --  Send (Re)START condition
---        --  --     --
---        --  --     --     Val.START := True;
---        --  --     --  end if;
---        --  --
---        --  --     Self.Peripheral.CR2 := Val;
---        --  --  end;
---        --
---        --  A0B.ARMv7M.NVIC_Utilities.Clear_Pending (Self.Event_Interrupt);
---        --  A0B.ARMv7M.NVIC_Utilities.Enable_Interrupt (Self.Event_Interrupt);
---        --  --  Clear pending interrupt status and enable interrupt.
---        --
---        --  --  null;
---        raise Program_Error;
+      Device_Locks.Acquire (Self.Device_Lock, Device, Success);
+
+      if not Success then
+         return;
+      end if;
+
+      Self.Peripheral.CR1.STOP := True;
+      --  Send STOP condition when requested. There is no interrupt to
+      --  handle unset of BUSY by hardware, so attempt to overlap send
+      --  of STOP condition and processing of the recieved data by the
+      --  device driver.
+
+      --  Wait till end of the transaction on the bus.
+
+      while Self.Peripheral.SR2.BUSY loop
+         null;
+      end loop;
+
+      Self.Stop := False;
+      Self.Operation := None;
+
+      declare
+         Device  : constant I2C_Device_Driver_Access :=
+           Device_Locks.Device (Self.Device_Lock);
+         Success : Boolean := True;
+
+      begin
+         Device_Locks.Release (Self.Device_Lock, Device, Success);
+
+         Device.On_Transaction_Completed;
+      end;
    end Stop;
 
    -----------
@@ -735,8 +725,9 @@ package body A0B.I2C.STM32F401_I2C is
       end if;
 
       for Buffer of Buffers loop
-         Buffer.Transferred := 0;
-         Buffer.State       := Active;
+         Buffer.Transferred  := 0;
+         Buffer.State        := Active;
+         Buffer.Acknowledged := False;
       end loop;
 
       Self.Device    := Device.Target_Address;
