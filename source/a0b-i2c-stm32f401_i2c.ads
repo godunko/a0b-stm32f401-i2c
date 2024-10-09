@@ -7,9 +7,8 @@
 --  Implementation of the I2C bus master for the STM32F401 controller.
 --  It use DMA for data transfer.
 
-pragma Restrictions (No_Elaboration_Code);
+--  pragma Restrictions (No_Elaboration_Code);
 
-with A0B.ARMv7M;
 with A0B.STM32F401.DMA;
 with A0B.STM32F401.GPIO;
 with A0B.STM32F401.SVD.I2C;
@@ -23,8 +22,8 @@ is
    type Master_Controller
      (Peripheral       : not null access A0B.STM32F401.SVD.I2C.I2C_Peripheral;
       Controller       : Controller_Number;
-      Event_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
-      Error_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
+      Event_Interrupt  : A0B.STM32F401.Interrupt_Number;
+      Error_Interrupt  : A0B.STM32F401.Interrupt_Number;
       Transmit_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
       Transmit_Channel : A0B.STM32F401.DMA.Channel_Number;
       Receive_Stream   : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
@@ -72,8 +71,8 @@ private
    type Master_Controller
      (Peripheral       : not null access A0B.STM32F401.SVD.I2C.I2C_Peripheral;
       Controller       : Controller_Number;
-      Event_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
-      Error_Interrupt  : A0B.ARMv7M.External_Interrupt_Number;
+      Event_Interrupt  : A0B.STM32F401.Interrupt_Number;
+      Error_Interrupt  : A0B.STM32F401.Interrupt_Number;
       Transmit_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
       Transmit_Channel : A0B.STM32F401.DMA.Channel_Number;
       Receive_Stream   : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
@@ -83,22 +82,19 @@ private
       SDA_Pin          : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
       SDA_Line         : A0B.STM32F401.Function_Line) is
    limited new I2C_Bus_Master with record
-      Device_Lock : Device_Locks.Lock;
-      Device      : Device_Address;
-      Operation   : Operation_Kind := None;
-      Buffers     : access Buffer_Descriptor_Array;
-      Active      : A0B.Types.Unsigned_32;
-      Stream      : access A0B.STM32F401.DMA.DMA_Stream'Class;
-      Stop        : Boolean;
+      Device_Lock    : Device_Locks.Lock;
+
+      Buffers        : access Buffer_Descriptor_Array;
+      Active         : A0B.Types.Unsigned_32;
+      Stream         : access A0B.STM32F401.DMA.DMA_Stream'Class;
+
+      Device_Address : A0B.I2C.Device_Address;
+      Operation      : Operation_Kind := None;
+
+      Stop           : Boolean;
       --  Send of STOP condition is requested after completion of the current
       --  operation. This flag is used to reject erroneous Read/Write request
       --  after completion of the transfer and before release of the bus.
-
-      BTF_Enabled : Boolean;
-      --  This flag is used to "mask" BTF flag when write operation is
-      --  completed, but transaction is not closed. In particular, it "masks"
-      --  event interrupt till START condition of the next operation is
-      --  processed.
    end record;
 
    overriding procedure Start
@@ -125,8 +121,8 @@ private
       Device  : not null I2C_Device_Driver_Access;
       Success : in out Boolean);
 
-   procedure On_Event_Interrupt (Self : in out Master_Controller'Class);
-
-   procedure On_Error_Interrupt (Self : in out Master_Controller'Class);
+   procedure On_Interrupt (Self : in out Master_Controller'Class);
+   --  Interrupt handler for all interrupts (I2C event, I2C error, DMA
+   --  streams).
 
 end A0B.I2C.STM32F401_I2C;

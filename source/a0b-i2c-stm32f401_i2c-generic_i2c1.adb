@@ -24,7 +24,7 @@ package body A0B.I2C.STM32F401_I2C.Generic_I2C1 is
 
    procedure I2C1_ER_Handler is
    begin
-      I2C1.On_Error_Interrupt;
+      I2C1.On_Interrupt;
    end I2C1_ER_Handler;
 
    ---------------------
@@ -33,7 +33,7 @@ package body A0B.I2C.STM32F401_I2C.Generic_I2C1 is
 
    procedure I2C1_EV_Handler is
    begin
-      I2C1.On_Event_Interrupt;
+      I2C1.On_Interrupt;
    end I2C1_EV_Handler;
 
 end A0B.I2C.STM32F401_I2C.Generic_I2C1;
