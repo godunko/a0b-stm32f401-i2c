@@ -289,6 +289,11 @@ package body A0B.I2C.STM32F401_I2C is
             --  handle unset of BUSY by hardware, so attempt to overlap send
             --  of STOP condition and processing of the recieved data by the
             --  device driver.
+
+            Self.Peripheral.CR2.ITEVTEN := True;
+            --  Enable event interrupt. It might be disabled at the completion
+            --  of the write operation to prevent endless call of the event
+            --  interrupt handler.
          end if;
 
          Device_Locks.Device (Self.Device_Lock).On_Transfer_Completed;
@@ -447,6 +452,15 @@ package body A0B.I2C.STM32F401_I2C is
          pragma Assert (Self.Peripheral.SR1.TxE);
          pragma Assert (Self.Operation = Write);
 
+         --  Transmission done, disable event interrupt, otherwise interrupt
+         --  handler will be called continuously when I2C driver doesn't
+         --  request another transfer or sent STOP condition immidiately.
+         --
+         --  It is case of the SCD40 driver, sensor requires timeout between
+         --  write of the register address and read of the content.
+
+         Self.Peripheral.CR2.ITEVTEN := False;
+
          if Self.Operation /= Write then
             raise Program_Error;
          end if;
@@ -498,7 +512,8 @@ package body A0B.I2C.STM32F401_I2C is
       Self.Setup_Data_Transfer;
 
       Self.Peripheral.CR1.START := True;
-      --  Send START condition
+      Self.Peripheral.CR2.ITEVTEN := True;
+      --  Send START condition and enable handling of the event interrupts.
    end Read;
 
    -------------------------
@@ -584,6 +599,11 @@ package body A0B.I2C.STM32F401_I2C is
       --  of STOP condition and processing of the recieved data by the
       --  device driver.
 
+      Self.Peripheral.CR2.ITEVTEN := True;
+      --  Enable event interrupt. It might be disabled at the completion of
+      --  the write operation to prevent endless call of the event interrupt
+      --  handler.
+
       --  Wait till end of the transaction on the bus.
 
       while Self.Peripheral.SR2.BUSY loop
@@ -644,7 +664,8 @@ package body A0B.I2C.STM32F401_I2C is
       Self.Setup_Data_Transfer;
 
       Self.Peripheral.CR1.START := True;
-      --  Send START condition
+      Self.Peripheral.CR2.ITEVTEN := True;
+      --  Send START condition and enable handling of the event interrupts.
    end Write;
 
 end A0B.I2C.STM32F401_I2C;
