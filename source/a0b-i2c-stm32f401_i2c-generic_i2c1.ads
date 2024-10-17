@@ -6,6 +6,8 @@
 
 pragma Restrictions (No_Elaboration_Code);
 
+with A0B.STM32F401.I2C_Function_Lines;
+
 generic
    Transmit_Stream : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
    Receive_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
@@ -28,8 +30,8 @@ is
       Receive_Stream   => Receive_Stream,
       Receive_Channel  => 1,
       SCL_Pin          => SCL_Pin,
-      SCL_Line         => A0B.STM32F401.I2C1_SCL,
+      SCL_Line         => A0B.STM32F401.I2C_Function_Lines.I2C1_SCL'Access,
       SDA_Pin          => SDA_Pin,
-      SDA_Line         => A0B.STM32F401.I2C1_SDA);
+      SDA_Line         => A0B.STM32F401.I2C_Function_Lines.I2C1_SDA'Access);
 
 end A0B.I2C.STM32F401_I2C.Generic_I2C1;

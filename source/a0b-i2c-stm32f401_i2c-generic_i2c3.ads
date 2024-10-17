@@ -8,6 +8,8 @@ pragma Restrictions (No_Elaboration_Code);
 
 with A0B.STM32F401.GPIO.PIOA;
 
+with A0B.STM32F401.I2C_Function_Lines;
+
 generic
    Transmit_Stream  : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
    Transmit_Channel : A0B.STM32F401.DMA.Channel_Number;
@@ -31,8 +33,8 @@ is
       Receive_Stream   => Receive_Stream,
       Receive_Channel  => Receive_Channel,
       SCL_Pin          => A0B.STM32F401.GPIO.PIOA.PA8'Access,
-      SCL_Line         => A0B.STM32F401.I2C3_SCL,
+      SCL_Line         => A0B.STM32F401.I2C_Function_Lines.I2C3_SCL'Access,
       SDA_Pin          => SDA_Pin,
-      SDA_Line         => A0B.STM32F401.I2C3_SDA);
+      SDA_Line         => A0B.STM32F401.I2C_Function_Lines.I2C3_SDA'Access);
 
 end A0B.I2C.STM32F401_I2C.Generic_I2C3;

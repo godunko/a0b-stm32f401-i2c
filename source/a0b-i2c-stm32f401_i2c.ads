@@ -7,7 +7,7 @@
 --  Implementation of the I2C bus master for the STM32F401 controller.
 --  It use DMA for data transfer.
 
---  pragma Restrictions (No_Elaboration_Code);
+pragma Restrictions (No_Elaboration_Code);
 
 with A0B.STM32F401.DMA;
 with A0B.STM32F401.GPIO;
@@ -29,9 +29,11 @@ is
       Receive_Stream   : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
       Receive_Channel  : A0B.STM32F401.DMA.Channel_Number;
       SCL_Pin          : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
-      SCL_Line         : A0B.STM32F401.Function_Line;
+      SCL_Line         :
+        not null access constant A0B.STM32F401.Function_Line_Descriptor;
       SDA_Pin          : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
-      SDA_Line         : A0B.STM32F401.Function_Line) is
+      SDA_Line         :
+        not null access constant A0B.STM32F401.Function_Line_Descriptor) is
         limited new I2C_Bus_Master with private
           with Preelaborable_Initialization;
 
@@ -78,9 +80,11 @@ private
       Receive_Stream   : not null access A0B.STM32F401.DMA.DMA_Stream'Class;
       Receive_Channel  : A0B.STM32F401.DMA.Channel_Number;
       SCL_Pin          : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
-      SCL_Line         : A0B.STM32F401.Function_Line;
+      SCL_Line         :
+        not null access constant A0B.STM32F401.Function_Line_Descriptor;
       SDA_Pin          : not null access A0B.STM32F401.GPIO.GPIO_Line'Class;
-      SDA_Line         : A0B.STM32F401.Function_Line) is
+      SDA_Line         :
+        not null access constant A0B.STM32F401.Function_Line_Descriptor) is
    limited new I2C_Bus_Master with record
       Device_Lock    : Device_Locks.Lock;
 
