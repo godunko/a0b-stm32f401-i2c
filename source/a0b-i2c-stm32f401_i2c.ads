@@ -35,7 +35,14 @@ is
       SDA_Line         :
         not null access constant A0B.STM32F401.Function_Line_Descriptor) is
         limited new I2C_Bus_Master with private
-          with Preelaborable_Initialization;
+          with Preelaborable_Initialization,
+               Static_Predicate =>
+                 A0B.STM32F401.GPIO.Is_Supported
+                  (Master_Controller.SCL_Pin.all,
+                   Master_Controller.SCL_Line.all)
+                 and A0B.STM32F401.GPIO.Is_Supported
+                       (Master_Controller.SDA_Pin.all,
+                        Master_Controller.SDA_Line.all);
 
    procedure Configure (Self : in out Master_Controller'Class);
 
