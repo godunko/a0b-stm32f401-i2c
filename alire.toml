@@ -19,3 +19,8 @@ generate_gpr = true
 a0b_i2c = "*"
 a0b_stm32f401_dma = "*"
 a0b_stm32f401_gpio = "*"
+
+[[actions]]
+type = "test"
+directory = "selftest"
+command = ["alr", "build"]

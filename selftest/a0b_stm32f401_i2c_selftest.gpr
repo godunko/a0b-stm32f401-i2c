@@ -1,0 +1,14 @@
+--
+--  Copyright (C) 2024, Vadim Godunko <vgodunko@gmail.com>
+--
+--  SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+--
+
+with "config/a0b_stm32f401_i2c_selftest_config.gpr";
+
+project A0B_STM32F401_I2C_Selftest is
+
+   for Target use "arm-eabi";
+   for Runtime ("Ada") use "light-cortex-m4f";
+
+end A0B_STM32F401_I2C_Selftest;
