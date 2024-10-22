@@ -1,6 +1,6 @@
 name = "a0b_stm32f401_i2c"
 description = "A0B: STM32F401 I2C"
-version = "0.1.0"
+version = "0.2.0-dev"
 
 authors = ["Vadim Godunko"]
 maintainers = ["Vadim Godunko <vgodunko@gmail.com>"]
